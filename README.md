@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yibelalet — Football Prediction Leaderboard
 
-## Getting Started
+Next.js + Supabase football tipster/AI predictor leaderboard with full profile analytics.
 
-First, run the development server:
+## Quick start (demo data, no credentials)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/leaderboard](http://localhost:3000/leaderboard).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without Supabase env vars the app uses a deterministic **demonstration** dataset (25 profiles), clearly labeled in the UI.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Connect Supabase
 
-## Learn More
+1. Create a Supabase project.
+2. Copy `.env.example` → `.env.local` and fill:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (seed only; server-side)
+3. Run the migration SQL in the Supabase SQL editor:
+   - `supabase/migrations/20261012170000_football_leaderboard.sql`
+4. Seed demo rows (idempotent upsert):
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run seed:supabase
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. Restart `npm run dev`. The app switches to Supabase automatically when URL + anon key are present.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Set `LEADERBOARD_DATA_SOURCE=demo` to force demo mode even with credentials.
 
-## Deploy on Vercel
+## Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/leaderboard` — searchable, filterable rankings
+- `/predictors/[slug]` — profile, open tips, history calendar/table, charts, breakdowns
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Local app |
+| `npm test` | Domain unit tests |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript |
+| `npm run build` | Production build |
+| `npm run seed:supabase` | Upsert demo world into Supabase |
+
+## Notes
+
+- ROI / net profit only appear when `betting_records` exist.
+- Settled/locked predictions cannot silently change selection (DB trigger + domain guards).
+- Demo records are flagged `is_demo` and labeled in the UI.
