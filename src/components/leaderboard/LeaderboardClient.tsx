@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { Competition, LeaderboardEntry, RankingMetric, TimeRangeKey } from "@/domain/types";
 import { formatPercent, formatUnits } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
+import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
 
@@ -75,25 +76,20 @@ export function LeaderboardClient({
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-dim)]">
-          Football analytics
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Football Leaderboard
-        </h1>
-        <p className="max-w-3xl text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
+        <LinedSectionTitle as="h1">Football Leaderboard</LinedSectionTitle>
+        <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
           Rankings are computed from settled predictions over the selected period.
           Profiles need at least 10 win/loss settlements to be eligible. Profitability
           ranking only appears when unit stakes and odds were recorded — accuracy alone
           never implies profit.
         </p>
-        <p className="text-sm text-[var(--text-dim)]">
+        <p className="text-center text-sm text-[var(--text-dim)]">
           {profileCount} public profiles
         </p>
       </header>
 
       <form
-        className="surface grid gap-3 rounded-xl p-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-3 rounded-xl border border-[var(--border)] bg-black p-4 sm:grid-cols-2 lg:grid-cols-5"
         method="get"
         action="/leaderboard"
       >
@@ -177,7 +173,7 @@ export function LeaderboardClient({
       </form>
 
       {visible.length === 0 ? (
-        <div className="surface rounded-xl p-10 text-center">
+        <div className="rounded-xl border border-[var(--border)] bg-black p-10 text-center">
           <h2 className="text-lg font-medium">No profiles match</h2>
           <p className="mt-2 text-sm text-[var(--text-muted)]">
             Try clearing search or widening the creator-type filter.
@@ -185,10 +181,10 @@ export function LeaderboardClient({
         </div>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border border-[var(--border)] md:block">
+          <div className="hidden overflow-hidden rounded-xl border border-[var(--border)] bg-black md:block">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-[var(--bg-soft)] text-xs uppercase tracking-wide text-[var(--text-dim)]">
-                <tr>
+              <thead className="text-xs uppercase tracking-wide text-[var(--text-dim)]">
+                <tr className="border-b border-[var(--border)]">
                   <th className="px-4 py-3 font-medium">Rank</th>
                   <th className="px-4 py-3 font-medium">Profile</th>
                   <th className="px-4 py-3 font-medium">Record</th>
@@ -203,7 +199,7 @@ export function LeaderboardClient({
                 {visible.map((entry) => (
                   <tr
                     key={entry.profile.id}
-                    className="border-t border-[var(--border)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-soft)]"
+                    className="border-t border-[var(--border)] hover:bg-white/[0.03]"
                   >
                     <td className="px-4 py-3 font-mono text-[var(--text-muted)]">
                       #{entry.rank}
@@ -272,7 +268,7 @@ export function LeaderboardClient({
               <li key={entry.profile.id}>
                 <Link
                   href={profileHref(entry.profile.slug)}
-                  className="surface focus-ring block rounded-xl p-4"
+                  className="focus-ring block rounded-xl border border-[var(--border)] bg-black p-4"
                 >
                   <div className="flex items-start gap-3">
                     <span className="font-mono text-sm text-[var(--text-dim)]">

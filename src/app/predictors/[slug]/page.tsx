@@ -127,7 +127,6 @@ export default async function PredictorProfilePage({
         byCompetition={breakdowns.byCompetition}
         byMarket={breakdowns.byMarket}
         competitions={competitions}
-        isDemo={info.isDemo}
         initialChartRange={chart}
       />
     </AppShell>

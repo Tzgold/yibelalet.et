@@ -2,10 +2,23 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { ClubLogo } from "@/components/ui/ClubLogo";
+import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { getRepository } from "@/data/get-repository";
-import { formatKickoffLocal } from "@/lib/format";
 
 export const instant = false;
+
+function splitKickoff(iso: string) {
+  const d = new Date(iso);
+  return {
+    date: d
+      .toLocaleDateString(undefined, { day: "2-digit", month: "short" })
+      .toUpperCase(),
+    time: d.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
 
 export default async function MatchesPage() {
   await connection();
@@ -15,54 +28,73 @@ export default async function MatchesPage() {
 
   return (
     <AppShell dataLabel={info.label}>
-      <div className="space-y-4">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Matches</h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Upcoming fixtures available in the current data source.
-            {info.isDemo
-              ? " Demonstration schedule — not a live fixture provider feed."
-              : ""}
+      <div>
+        <header className="mb-8">
+          <LinedSectionTitle as="h1">Upcoming matches</LinedSectionTitle>
+          <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[var(--text-muted)]">
+            Upcoming fixtures from the current data source.
           </p>
         </header>
 
         {matches.length === 0 ? (
-          <div className="border border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-muted)]">
-            No upcoming matches available. Connect a fixture provider to populate this page.
+          <div className="rounded-xl border border-[var(--border)] px-4 py-12 text-center text-sm text-[var(--text-muted)]">
+            No upcoming matches available.
           </div>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {matches.map((m) => (
-              <li
-                key={m.match.id}
-                className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-4"
-              >
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-dim)]">
-                  {m.competition.shortName}
-                  {m.isDemo ? " · Demo" : ""}
-                </p>
-                <div className="mt-4 flex items-center justify-between gap-2">
-                  <div className="flex flex-1 flex-col items-center gap-2 text-center">
-                    <ClubLogo name={m.homeTeam.name} logoUrl={m.homeTeam.logoUrl} size={44} />
-                    <span className="text-xs font-semibold">{m.homeTeam.name}</span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-[var(--text-dim)]">vs</span>
-                  <div className="flex flex-1 flex-col items-center gap-2 text-center">
-                    <ClubLogo name={m.awayTeam.name} logoUrl={m.awayTeam.logoUrl} size={44} />
-                    <span className="text-xs font-semibold">{m.awayTeam.name}</span>
-                  </div>
-                </div>
-                <p className="mt-3 text-center text-xs text-[var(--text-dim)]">
-                  {formatKickoffLocal(m.match.kickoffAt)}
-                </p>
-                <Link
-                  href="/signin?next=%2Fleaderboard"
-                  className="focus-ring mt-4 inline-flex w-full justify-center text-xs text-[var(--accent)] hover:underline"
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {matches.map((m) => {
+              const { date, time } = splitKickoff(m.match.kickoffAt);
+              return (
+                <li
+                  key={m.match.id}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-5 py-6"
                 >
-                  Sign in for analysis →
-                </Link>
-              </li>
-            ))}
+                  <div className="flex items-start justify-center gap-3">
+                    <div className="flex w-[40%] flex-col items-center gap-2.5 text-center">
+                      <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg)] ring-1 ring-[var(--border)]">
+                        <ClubLogo
+                          name={m.homeTeam.name}
+                          logoUrl={m.homeTeam.logoUrl}
+                          size={42}
+                        />
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide">
+                        {m.homeTeam.shortName}
+                      </span>
+                    </div>
+                    <span className="mt-4 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg)] text-[9px] font-bold uppercase text-[var(--text-muted)] ring-1 ring-[var(--border)]">
+                      vs
+                    </span>
+                    <div className="flex w-[40%] flex-col items-center gap-2.5 text-center">
+                      <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg)] ring-1 ring-[var(--border)]">
+                        <ClubLogo
+                          name={m.awayTeam.name}
+                          logoUrl={m.awayTeam.logoUrl}
+                          size={42}
+                        />
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide">
+                        {m.awayTeam.shortName}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-[var(--border)] pt-3.5 text-[11px] text-[var(--text-muted)]">
+                    <span>{date}</span>
+                    <span className="h-3 w-px bg-[var(--border)]" aria-hidden />
+                    <span>{time}</span>
+                  </div>
+
+                  <Link
+                    href="/signin?next=%2Fmatches"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
+                  >
+                    View Details
+                    <span aria-hidden>›</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

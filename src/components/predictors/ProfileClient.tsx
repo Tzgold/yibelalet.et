@@ -56,7 +56,6 @@ export function ProfileClient({
   byCompetition,
   byMarket,
   competitions,
-  isDemo,
   initialChartRange = "month",
 }: {
   profile: PredictorProfile;
@@ -80,7 +79,6 @@ export function ProfileClient({
   byCompetition: BreakdownRow[];
   byMarket: BreakdownRow[];
   competitions: Competition[];
-  isDemo: boolean;
   initialChartRange?: ChartRangeKey;
 }) {
   const router = useRouter();
@@ -181,12 +179,6 @@ export function ProfileClient({
 
   return (
     <div className="space-y-8">
-      {isDemo || profile.isDemo ? (
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)]">
-          Demonstration profile and prediction history — not verified real-world performance.
-        </div>
-      ) : null}
-
       <section className="surface rounded-xl p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <Avatar name={profile.displayName} url={profile.avatarUrl} size="lg" />
