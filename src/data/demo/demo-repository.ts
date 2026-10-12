@@ -339,18 +339,45 @@ export class DemoRepository implements PredictorRepository {
   async getRecentSettledTips(limit = 8): Promise<RecentSettledTip[]> {
     const world = getDemoWorld();
     const settled = world.predictions
-      .filter((p) => p.status === "settled" && (p.settlementOutcome === "win" || p.settlementOutcome === "loss"))
-      .sort((a, b) => (b.settledAt ?? b.publishedAt).localeCompare(a.settledAt ?? a.publishedAt))
-      .slice(0, limit * 3);
+      .filter(
+        (p) =>
+          p.status === "settled" &&
+          (p.settlementOutcome === "win" || p.settlementOutcome === "loss"),
+      )
+      .sort((a, b) =>
+        (b.settledAt ?? b.publishedAt).localeCompare(a.settledAt ?? a.publishedAt),
+      );
 
     const items: RecentSettledTip[] = [];
+    const seenMatches = new Set<string>();
+    const seenClubs = new Set<string>();
+
+    // Prefer unique fixtures / clubs so the feed shows more crests.
     for (const p of settled) {
       const view = toView(p.id, world);
       const profile = world.profiles.find((pr) => pr.id === p.profileId);
       if (!view || !profile) continue;
+      if (seenMatches.has(view.match.id)) continue;
+      const clubs = [view.homeTeam.id, view.awayTeam.id];
+      const newClub = clubs.some((id) => !seenClubs.has(id));
+      if (!newClub && items.length >= Math.ceil(limit * 0.6)) continue;
+      seenMatches.add(view.match.id);
+      for (const id of clubs) seenClubs.add(id);
       items.push({ view, profile });
       if (items.length >= limit) break;
     }
+
+    if (items.length < limit) {
+      for (const p of settled) {
+        const view = toView(p.id, world);
+        const profile = world.profiles.find((pr) => pr.id === p.profileId);
+        if (!view || !profile) continue;
+        if (items.some((i) => i.view.id === view.id)) continue;
+        items.push({ view, profile });
+        if (items.length >= limit) break;
+      }
+    }
+
     return items;
   }
 }
