@@ -62,7 +62,7 @@ export function SiteFooter() {
       <div className="border-t border-[var(--border)]">
         <div className="page-shell flex flex-col gap-2 py-3.5 text-[11px] text-[var(--text-dim)] sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Yibelalet. All rights reserved.</p>
-          <p>Accuracy is not betting profit. Demo data is labeled.</p>
+          <p>Accuracy is not betting profit.</p>
         </div>
       </div>
     </footer>

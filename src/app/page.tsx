@@ -75,7 +75,7 @@ export default async function HomePage({
       }),
       repo.getUpcomingMatches(6),
       repo.getShowcaseMatch(),
-      repo.getRecentSettledTips(6),
+      repo.getRecentSettledTips(10),
     ]);
     entries = board;
     totalProfiles = allBoard.length;
@@ -89,7 +89,12 @@ export default async function HomePage({
   return (
     <AppShell variant="landing" dataLabel={info.label}>
       <div>
-        <LandingHero featuredMatch={showcase} />
+        <LandingHero
+          showcaseMatches={[
+            ...(showcase ? [showcase] : []),
+            ...upcoming.filter((m) => m.match.id !== showcase?.match.id).slice(0, 4),
+          ]}
+        />
         <LandingStats profileCount={totalProfiles} />
 
         {error ? (

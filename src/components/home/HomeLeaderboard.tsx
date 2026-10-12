@@ -7,6 +7,7 @@ import { formatPercent } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Sparkline } from "@/components/ui/Sparkline";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { profileAccessHref } from "@/lib/auth-paths";
 
 function lockedProfileHref(slug: string) {
@@ -79,14 +80,11 @@ export function HomeLeaderboard({
 
   return (
     <section id="leaderboard" className="scroll-mt-20 py-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">The leaderboard</h2>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Compare performance across human tipsters and AI models. View profile requires
-            sign-in.
-          </p>
-        </div>
+      <LinedSectionTitle>The leaderboard</LinedSectionTitle>
+      <div className="mt-3 flex flex-col items-center gap-2 text-center sm:flex-row sm:justify-between sm:text-left">
+        <p className="text-sm text-[var(--text-muted)]">
+          Compare tipsters and AI models. View profile requires sign-in.
+        </p>
         <Link
           href="/leaderboard"
           className="focus-ring text-sm font-medium text-[var(--accent)] hover:underline"
@@ -98,7 +96,7 @@ export function HomeLeaderboard({
       <form
         method="get"
         action="/"
-        className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-3 sm:flex-row sm:flex-wrap sm:items-center"
+        className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-black p-3 sm:flex-row sm:flex-wrap sm:items-center"
       >
         <label className="min-w-[12rem] flex-1">
           <span className="sr-only">Search</span>
@@ -178,7 +176,7 @@ export function HomeLeaderboard({
         </div>
       ) : (
         <>
-          <div className="mt-3 hidden overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] md:block">
+          <div className="mt-3 hidden overflow-hidden rounded-lg border border-[var(--border)] bg-black md:block">
             <table className="w-full text-left text-sm">
               <thead className="text-[11px] uppercase tracking-wide text-[var(--text-dim)]">
                 <tr className="border-b border-[var(--border)]">
@@ -198,7 +196,7 @@ export function HomeLeaderboard({
                   return (
                     <tr
                       key={entry.profile.id}
-                      className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-soft)]"
+                      className="border-b border-[var(--border)] last:border-0 hover:bg-white/[0.03]"
                     >
                       <td className="px-4 py-3 font-mono text-xs text-[var(--text-dim)]">
                         {entry.rank}
@@ -259,12 +257,12 @@ export function HomeLeaderboard({
             </table>
           </div>
 
-          <ul className="mt-3 divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] md:hidden">
+          <ul className="mt-3 divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-black md:hidden">
             {visible.map((entry) => (
               <li key={entry.profile.id}>
                 <Link
                   href={lockedProfileHref(entry.profile.slug)}
-                  className="focus-ring flex items-center gap-3 px-4 py-3"
+                  className="focus-ring flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03]"
                 >
                   <span className="w-5 font-mono text-xs text-[var(--text-dim)]">
                     {entry.rank}
@@ -295,34 +293,49 @@ export function HomeLeaderboard({
       )}
 
       {topAi.length > 0 ? (
-        <div className="mt-5 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)]">
-              Top AI models
-            </p>
+        <div className="mt-10">
+          <div className="mb-5 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
+                Top AI models
+              </p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">
+                Highest accuracy AI predictors right now
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setProfileType("ai")}
-              className="text-[11px] text-[var(--accent)] hover:underline"
+              className="focus-ring shrink-0 text-sm font-medium text-[var(--accent)] hover:underline"
             >
               Filter AI →
             </button>
           </div>
-          <ul className="grid gap-2 sm:grid-cols-3">
-            {topAi.map((e) => (
+          <ul className="grid gap-4 sm:grid-cols-3">
+            {topAi.map((e, i) => (
               <li key={e.profile.id}>
                 <Link
                   href={lockedProfileHref(e.profile.slug)}
-                  className="focus-ring flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2.5 py-2.5 hover:border-[var(--border-strong)]"
+                  className="focus-ring group flex h-full flex-col items-center rounded-xl border border-[var(--border)] bg-black px-5 py-6 text-center transition hover:border-[var(--accent)]"
                 >
-                  <Avatar name={e.profile.displayName} url={e.profile.avatarUrl} size="sm" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-medium">
+                  <span className="mb-4 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-[rgba(245,158,11,0.35)] bg-[var(--accent-soft)] px-2 text-[11px] font-bold text-[var(--accent)]">
+                    #{i + 1}
+                  </span>
+                  <Avatar name={e.profile.displayName} url={e.profile.avatarUrl} size="lg" />
+                  <span className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+                    <span className="text-base font-semibold tracking-tight text-[var(--text)] group-hover:text-[var(--accent)]">
                       {e.profile.displayName}
                     </span>
-                    <span className="block text-[10px] text-[var(--text-dim)]">
-                      {formatPercent(e.summary.accuracy)} · {e.profile.modelType ?? "model"}
-                    </span>
+                    <TypeBadge type="ai" />
+                  </span>
+                  <span className="mt-3 text-2xl font-semibold tabular tracking-tight text-[var(--text)]">
+                    {formatPercent(e.summary.accuracy)}
+                  </span>
+                  <span className="mt-1 text-xs uppercase tracking-wide text-[var(--text-dim)]">
+                    {e.profile.modelType ?? "model"} · {e.summary.settledCount} settled
+                  </span>
+                  <span className="mt-5 text-xs font-medium text-[var(--accent)]">
+                    View profile →
                   </span>
                 </Link>
               </li>
