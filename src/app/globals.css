@@ -47,6 +47,10 @@ body {
   font-family: var(--font-outfit), "Segoe UI", sans-serif;
 }
 
+html[lang="am"] body {
+  font-family: var(--font-ethiopic), var(--font-outfit), "Segoe UI", sans-serif;
+}
+
 a {
   color: inherit;
   text-decoration: none;
