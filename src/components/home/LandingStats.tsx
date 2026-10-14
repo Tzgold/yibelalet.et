@@ -1,24 +1,30 @@
+"use client";
+
+import { useT } from "@/i18n/I18nProvider";
+
 export function LandingStats({ profileCount }: { profileCount: number }) {
+  const t = useT();
+
   const items = [
     {
       value: String(profileCount),
-      label: "Public profiles",
-      detail: "Tipsters and models with tracked prediction histories.",
+      label: t("stats.publicProfiles"),
+      detail: t("stats.publicProfilesDetail"),
     },
     {
       value: "2",
-      label: "Predictor types",
-      detail: "Humans and AI ranked with identical settlement rules.",
+      label: t("stats.predictorTypes"),
+      detail: t("stats.predictorTypesDetail"),
     },
     {
       value: "100%",
-      label: "Locked tips",
-      detail: "No edits after kickoff. No silent backdating.",
+      label: t("stats.lockedTips"),
+      detail: t("stats.lockedTipsDetail"),
     },
     {
       value: "1",
-      label: "Sport focus",
-      detail: "Built only for football match prediction analytics.",
+      label: t("stats.sportFocus"),
+      detail: t("stats.sportFocusDetail"),
     },
   ];
 

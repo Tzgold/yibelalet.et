@@ -2,28 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
-const ITEMS = [
-  {
-    q: "Is this real tipster performance?",
-    a: "The public build ships with labeled demonstration data so you can explore rankings and profiles. When live feeds are connected, demo rows stay clearly marked.",
-  },
-  {
-    q: "Why do I need to sign in to view a profile?",
-    a: "The leaderboard is public. Full prediction history, charts, and match analysis require an account so usage stays attributable and abuse stays low.",
-  },
-  {
-    q: "How are rankings calculated?",
-    a: "Settled tips only. Accuracy is wins ÷ (wins + losses), with a minimum sample size in the selected period. Human and AI predictors use the same rules.",
-  },
-  {
-    q: "Does accuracy mean betting profit?",
-    a: "No. Accuracy is forecast correctness. Profit and ROI appear only when betting records with odds and stakes exist for that tip.",
-  },
-] as const;
+import { useT } from "@/i18n/I18nProvider";
 
 export function LandingFaq() {
+  const t = useT();
   const [open, setOpen] = useState<number | null>(0);
+
+  const items = [
+    { q: t("faq.q1"), a: t("faq.a1") },
+    { q: t("faq.q2"), a: t("faq.a2") },
+    { q: t("faq.q3"), a: t("faq.a3") },
+    { q: t("faq.q4"), a: t("faq.a4") },
+  ];
 
   return (
     <section id="faq" className="scroll-mt-20 py-10">
@@ -40,14 +30,13 @@ export function LandingFaq() {
         <div className="relative grid gap-10 px-6 py-10 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)] lg:gap-14 lg:px-12 lg:py-14">
           <div className="flex flex-col justify-center">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-              FAQ
+              {t("faq.eyebrow")}
             </p>
             <h2 className="mt-4 max-w-md text-3xl font-semibold tracking-tight text-[var(--text)] sm:text-4xl sm:leading-[1.12]">
-              Get all your questions answered here
+              {t("faq.title")}
             </h2>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--text-muted)] sm:text-[15px]">
-              Straight answers about demonstration data, sign-in access, and how rankings are
-              scored.
+              {t("faq.subtitle")}
             </p>
             <div className="mt-8">
               <Link
@@ -59,14 +48,14 @@ export function LandingFaq() {
                 }}
               >
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#12151a] px-5 py-2.5 text-sm font-semibold text-[var(--text)]">
-                  Sign in to explore →
+                  {t("faq.cta")}
                 </span>
               </Link>
             </div>
           </div>
 
           <ul className="flex flex-col gap-3">
-            {ITEMS.map((item, index) => {
+            {items.map((item, index) => {
               const isOpen = open === index;
               return (
                 <li

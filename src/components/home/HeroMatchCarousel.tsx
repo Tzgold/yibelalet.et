@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { UpcomingMatchCard } from "@/data/repository";
 import { ClubLogo } from "@/components/ui/ClubLogo";
+import { useT } from "@/i18n/I18nProvider";
 
 const DEMO_ODDS = [
   [
@@ -58,6 +59,7 @@ const FALLBACK: UpcomingMatchCard = {
 };
 
 export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] }) {
+  const t = useT();
   const slides = matches.length > 0 ? matches : [FALLBACK];
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState<"left" | "right">("right");
@@ -174,7 +176,7 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
         <div className="mt-4 flex items-center justify-center gap-3">
           <button
             type="button"
-            aria-label="Previous match"
+            aria-label={t("heroExtra.previousMatch")}
             onClick={() => go(-1)}
             className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-black text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
@@ -185,7 +187,7 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
               <button
                 key={s.match.id}
                 type="button"
-                aria-label={`Show match ${i + 1}`}
+                aria-label={t("heroExtra.showMatch", { n: i + 1 })}
                 onClick={() => {
                   setDir(i > index ? "right" : "left");
                   setIndex(i);
@@ -201,7 +203,7 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
           </div>
           <button
             type="button"
-            aria-label="Next match"
+            aria-label={t("heroExtra.nextMatch")}
             onClick={() => go(1)}
             className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-black text-[var(--text)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >

@@ -5,6 +5,7 @@ import { useRef } from "react";
 import type { UpcomingMatchCard } from "@/data/repository";
 import { ClubLogo } from "@/components/ui/ClubLogo";
 import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
+import { useT } from "@/i18n/I18nProvider";
 
 function splitKickoff(iso: string) {
   const d = new Date(iso);
@@ -20,6 +21,7 @@ function splitKickoff(iso: string) {
 }
 
 export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
+  const t = useT();
   const scrollerRef = useRef<HTMLUListElement>(null);
 
   if (matches.length === 0) return null;
@@ -34,7 +36,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
 
   return (
     <section id="matches" className="scroll-mt-20 py-12">
-      <LinedSectionTitle>Upcoming matches</LinedSectionTitle>
+      <LinedSectionTitle>{t("matches.title")}</LinedSectionTitle>
 
       <div className="mt-8">
         <ul
@@ -63,7 +65,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
                   </div>
 
                   <span className="mt-4 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg)] text-[9px] font-bold uppercase text-[var(--text-muted)] ring-1 ring-[var(--border)]">
-                    vs
+                    {t("common.vs")}
                   </span>
 
                   <div className="flex w-[40%] flex-col items-center gap-2.5 text-center">
@@ -96,7 +98,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
                   href="/signin?next=%2Fmatches"
                   className="mt-4 inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
                 >
-                  View Details
+                  {t("common.viewDetails")}
                   <span aria-hidden>›</span>
                 </Link>
               </li>
@@ -107,7 +109,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
         <div className="mt-4 flex items-center justify-center gap-3">
           <button
             type="button"
-            aria-label="Previous matches"
+            aria-label={t("matches.previous")}
             onClick={() => scrollBy(-1)}
             className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text)] transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
           >
@@ -122,7 +124,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
           </button>
           <button
             type="button"
-            aria-label="Next matches"
+            aria-label={t("matches.next")}
             onClick={() => scrollBy(1)}
             className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text)] transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
           >
@@ -140,7 +142,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
 
       <p className="mt-5 text-center">
         <Link href="/matches" className="text-xs text-[var(--text-dim)] hover:text-[var(--accent)]">
-          View all matches →
+          {t("matchesPage.viewAll")}
         </Link>
       </p>
     </section>

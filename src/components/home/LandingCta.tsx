@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useT } from "@/i18n/I18nProvider";
 
 const PITCH_IMG =
   "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1600&q=80";
 
 export function LandingCta() {
+  const t = useT();
+
   return (
     <section className="relative overflow-hidden rounded-xl border border-[var(--border)]">
       <div
@@ -29,24 +34,23 @@ export function LandingCta() {
       />
       <div className="relative px-5 py-11 sm:px-8 sm:py-14">
         <h2 className="max-w-lg text-2xl font-semibold tracking-tight sm:text-3xl">
-          Find the predictors worth following.
+          {t("cta.title")}
         </h2>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--text-muted)]">
-          Explore recorded football forecasts, compare performance, and make your own
-          assessment.
+          {t("cta.subtitle")}
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           <a
             href="#leaderboard"
             className="focus-ring rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-ink)]"
           >
-            Explore rankings →
+            {t("cta.explore")}
           </a>
           <Link
             href="/signin"
             className="focus-ring rounded-md border border-[var(--border-strong)] bg-black/25 px-4 py-2.5 text-sm text-[var(--text)] backdrop-blur-sm"
           >
-            Sign in
+            {t("cta.signIn")}
           </Link>
         </div>
       </div>

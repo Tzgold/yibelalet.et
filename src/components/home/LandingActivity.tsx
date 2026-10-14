@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { RecentSettledTip } from "@/data/repository";
 import { Avatar } from "@/components/ui/Avatar";
@@ -6,32 +8,38 @@ import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
 import { formatRelative } from "@/lib/format";
+import { useT } from "@/i18n/I18nProvider";
 
 export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
+  const t = useT();
   if (tips.length === 0) return null;
 
-  const wins = tips.filter((t) => t.view.settlementOutcome === "win").length;
+  const wins = tips.filter((tip) => tip.view.settlementOutcome === "win").length;
   const losses = tips.length - wins;
 
   return (
     <section className="py-10">
-      <LinedSectionTitle>Recent settlements</LinedSectionTitle>
+      <LinedSectionTitle>{t("activity.title")}</LinedSectionTitle>
       <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[var(--text-muted)]">
-        Latest win/loss tips across the board
+        {t("activity.subtitle")}
       </p>
 
       <div className="mt-4 flex items-center justify-center gap-4 text-[11px] font-semibold uppercase tracking-wide">
-        <span className="text-[#22c55e]">{wins} win{wins === 1 ? "" : "s"}</span>
-        <span className="text-[#ef4444]">{losses} loss{losses === 1 ? "" : "es"}</span>
+        <span className="text-[#22c55e]">
+          {t(wins === 1 ? "activity.win" : "activity.wins", { count: wins })}
+        </span>
+        <span className="text-[#ef4444]">
+          {t(losses === 1 ? "activity.loss" : "activity.losses", { count: losses })}
+        </span>
       </div>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-[var(--border)] bg-black">
         <div className="hidden border-b border-[var(--border)] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-dim)] md:grid md:grid-cols-[minmax(0,1.35fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_4.5rem_6.5rem] md:gap-4">
-          <span>Predictor</span>
-          <span>Match</span>
-          <span>Selection</span>
-          <span className="text-center">Result</span>
-          <span className="text-right">When</span>
+          <span>{t("activity.predictor")}</span>
+          <span>{t("activity.match")}</span>
+          <span>{t("activity.selection")}</span>
+          <span className="text-center">{t("activity.result")}</span>
+          <span className="text-right">{t("activity.when")}</span>
         </div>
 
         <ul className="divide-y divide-[var(--border)]">
@@ -70,7 +78,7 @@ export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
                       </span>
                     </span>
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">
-                      vs
+                      {t("common.vs")}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <ClubLogo
@@ -99,7 +107,7 @@ export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
                         win ? "text-[#22c55e]" : "text-[#ef4444]"
                       }`}
                     >
-                      {win ? "Win" : "Loss"}
+                      {win ? t("common.win") : t("common.loss")}
                     </span>
                     <span className="text-[11px] text-[var(--text-dim)] md:hidden">
                       {view.settledAt ? formatRelative(view.settledAt) : "—"}

@@ -1,21 +1,26 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
-
-const NAV = [
-  { href: "/#leaderboard", label: "Rankings" },
-  { href: "/#matches", label: "Matches" },
-  { href: "/#how-it-works", label: "Methodology" },
-  { href: "/#about", label: "About" },
-  { href: "/#faq", label: "FAQ" },
-] as const;
-
-const LEGAL = [
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/contact", label: "Contact" },
-] as const;
+import { useT } from "@/i18n/I18nProvider";
 
 export function SiteFooter() {
+  const t = useT();
+
+  const nav = [
+    { href: "/#leaderboard", label: t("nav.rankings") },
+    { href: "/#matches", label: t("nav.matches") },
+    { href: "/#how-it-works", label: t("nav.methodology") },
+    { href: "/#about", label: t("nav.about") },
+    { href: "/#faq", label: t("nav.faq") },
+  ] as const;
+
+  const legal = [
+    { href: "/privacy", label: t("footer.privacy") },
+    { href: "/terms", label: t("footer.terms") },
+    { href: "/contact", label: t("footer.contact") },
+  ] as const;
+
   return (
     <footer className="mt-auto border-t border-[var(--border)]">
       <div className="page-shell flex flex-col gap-5 py-7 lg:flex-row lg:items-center lg:justify-between">
@@ -29,9 +34,9 @@ export function SiteFooter() {
 
         <nav
           className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-[var(--text-muted)]"
-          aria-label="Footer"
+          aria-label={t("nav.footer")}
         >
-          {NAV.map((link) => (
+          {nav.map((link) => (
             <Link key={link.href} href={link.href} className="hover:text-[var(--text)]">
               {link.label}
             </Link>
@@ -39,8 +44,11 @@ export function SiteFooter() {
         </nav>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <nav className="flex gap-4 text-xs text-[var(--text-muted)]" aria-label="Legal">
-            {LEGAL.map((link) => (
+          <nav
+            className="flex gap-4 text-xs text-[var(--text-muted)]"
+            aria-label={t("nav.legal")}
+          >
+            {legal.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-[var(--text)]">
                 {link.label}
               </Link>
@@ -61,8 +69,8 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-[var(--border)]">
         <div className="page-shell flex flex-col gap-2 py-3.5 text-[11px] text-[var(--text-dim)] sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Yibelalet. All rights reserved.</p>
-          <p>Accuracy is not betting profit.</p>
+          <p>{t("footer.rights")}</p>
+          <p>{t("footer.disclaimer")}</p>
         </div>
       </div>
     </footer>
@@ -84,9 +92,9 @@ function SocialLink({
       target="_blank"
       rel="noreferrer"
       aria-label={label}
-      className="focus-ring inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+      className="focus-ring inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-[var(--text-dim)] hover:border-[var(--border)] hover:text-[var(--text)]"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" aria-hidden>
         {children}
       </svg>
     </a>

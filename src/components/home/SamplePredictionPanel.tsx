@@ -1,3 +1,5 @@
+"use client";
+
 import type { PredictionView } from "@/domain/types";
 import {
   formatKickoffLocal,
@@ -5,9 +7,11 @@ import {
   marketLabel,
   selectionLabel,
 } from "@/lib/format";
+import { useT } from "@/i18n/I18nProvider";
 
 /** Compact tip panel from a real open prediction in the dataset. */
 export function SamplePredictionPanel({ tip }: { tip: PredictionView }) {
+  const t = useT();
   const p = tip.probability ?? 0;
 
   return (
@@ -16,7 +20,7 @@ export function SamplePredictionPanel({ tip }: { tip: PredictionView }) {
         {tip.competition.shortName}
       </p>
       <p className="mt-1 text-sm font-semibold leading-snug">
-        {tip.homeTeam.name} vs {tip.awayTeam.name}
+        {tip.homeTeam.name} {t("common.vs")} {tip.awayTeam.name}
       </p>
       <p className="mt-0.5 text-[11px] text-[var(--text-dim)]">
         {formatKickoffLocal(tip.match.kickoffAt)}
@@ -29,7 +33,7 @@ export function SamplePredictionPanel({ tip }: { tip: PredictionView }) {
         {tip.probability != null ? (
           <>
             <div className="mt-2 flex justify-between text-[11px]">
-              <span className="text-[var(--text-dim)]">Published probability</span>
+              <span className="text-[var(--text-dim)]">{t("heroExtra.publishedProb")}</span>
               <span className="tabular">{formatPercent(p, 0)}</span>
             </div>
             <div className="mt-1 h-1 bg-[var(--bg-soft)]">
@@ -42,7 +46,7 @@ export function SamplePredictionPanel({ tip }: { tip: PredictionView }) {
         ) : null}
       </div>
       <p className="mt-3 text-[10px] leading-snug text-[var(--text-dim)]">
-        Sample from demo open tip · not a live bookmaker market.
+        {t("heroExtra.sampleTip")}
       </p>
     </aside>
   );

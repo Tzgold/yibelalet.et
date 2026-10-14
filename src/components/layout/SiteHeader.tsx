@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
+import { useT } from "@/i18n/I18nProvider";
 
-const LANDING_LINKS = [
-  { href: "/#leaderboard", hash: "leaderboard", label: "Rankings" },
-  { href: "/#matches", hash: "matches", label: "Matches" },
-  { href: "/#how-it-works", hash: "how-it-works", label: "Methodology" },
-  { href: "/#about", hash: "about", label: "About" },
+const LANDING_LINK_DEFS = [
+  { href: "/#leaderboard", hash: "leaderboard", key: "nav.rankings" },
+  { href: "/#matches", hash: "matches", key: "nav.matches" },
+  { href: "/#how-it-works", hash: "how-it-works", key: "nav.methodology" },
+  { href: "/#about", hash: "about", key: "nav.about" },
 ] as const;
 
-const APP_LINKS = [
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/matches", label: "Matches" },
-  { href: "/ai-models", label: "AI Models" },
-  { href: "/how-it-works", label: "How it works" },
+const APP_LINK_DEFS = [
+  { href: "/leaderboard", key: "nav.leaderboard" },
+  { href: "/matches", key: "nav.matches" },
+  { href: "/ai-models", key: "nav.aiModels" },
+  { href: "/how-it-works", key: "nav.howItWorks" },
 ] as const;
 
 export function SiteHeader({
@@ -25,13 +27,23 @@ export function SiteHeader({
   dataLabel?: string;
   variant?: "landing" | "app";
 }) {
+  const t = useT();
   const pathname = usePathname();
   const [activeHash, setActiveHash] = useState("leaderboard");
+
+  const landingLinks = useMemo(
+    () => LANDING_LINK_DEFS.map((l) => ({ ...l, label: t(l.key) })),
+    [t],
+  );
+  const appLinks = useMemo(
+    () => APP_LINK_DEFS.map((l) => ({ ...l, label: t(l.key) })),
+    [t],
+  );
 
   useEffect(() => {
     if (variant !== "landing" || pathname !== "/") return;
 
-    const sectionIds = LANDING_LINKS.map((l) => l.hash);
+    const sectionIds = LANDING_LINK_DEFS.map((l) => l.hash);
 
     function syncFromHash() {
       const raw = window.location.hash.replace(/^#/, "");
@@ -81,7 +93,7 @@ export function SiteHeader({
           aria-label="Primary"
         >
           {variant === "landing"
-            ? LANDING_LINKS.map((link) => {
+            ? landingLinks.map((link) => {
                 const active = pathname === "/" && activeHash === link.hash;
                 return (
                   <a
@@ -100,7 +112,7 @@ export function SiteHeader({
                   </a>
                 );
               })
-            : APP_LINKS.map((link) => {
+            : appLinks.map((link) => {
                 const active =
                   pathname === link.href || pathname.startsWith(`${link.href}/`);
                 return (
@@ -130,26 +142,27 @@ export function SiteHeader({
               {dataLabel}
             </span>
           ) : null}
+          <LanguageSwitch />
           <Link
             href="/signin"
             className="focus-ring px-2.5 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text)]"
           >
-            Sign in
+            {t("nav.signIn")}
           </Link>
           <Link
-            href="/signin"
+            href="/signin?mode=register"
             className="focus-ring rounded-md bg-[var(--accent)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--accent-ink)]"
           >
-            Get started
+            {t("nav.register")}
           </Link>
         </div>
       </div>
       <nav
         className="page-shell flex gap-1 overflow-x-auto border-t border-[var(--border)] py-1.5 md:hidden"
-        aria-label="Mobile"
+        aria-label={t("nav.mobile")}
       >
         {variant === "landing"
-          ? LANDING_LINKS.map((link) => (
+          ? landingLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
@@ -162,7 +175,7 @@ export function SiteHeader({
                 {link.label}
               </a>
             ))
-          : APP_LINKS.map((link) => (
+          : appLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

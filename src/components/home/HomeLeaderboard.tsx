@@ -9,6 +9,7 @@ import { Sparkline } from "@/components/ui/Sparkline";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { profileAccessHref } from "@/lib/auth-paths";
+import { useT } from "@/i18n/I18nProvider";
 
 function lockedProfileHref(slug: string) {
   return profileAccessHref(slug, false);
@@ -21,20 +22,6 @@ function formDelta(form: LeaderboardEntry["recentForm"]): number | null {
   const rate = wins / decided.length;
   return Math.round((rate - 0.5) * 12 * 10) / 10;
 }
-
-const RANGES: { value: TimeRangeKey; label: string }[] = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-  { value: "all", label: "All time" },
-];
-
-const METRICS: { value: RankingMetric; label: string }[] = [
-  { value: "accuracy", label: "Accuracy" },
-  { value: "default", label: "Default" },
-  { value: "recent", label: "Recent form" },
-  { value: "profitability", label: "Profitability" },
-];
 
 export function HomeLeaderboard({
   entries,
@@ -51,10 +38,31 @@ export function HomeLeaderboard({
   initialMetric?: RankingMetric;
   initialSearch?: string;
 }) {
+  const t = useT();
   const [profileType, setProfileType] = useState<"all" | "human" | "ai">(initialType);
   const [timeRange, setTimeRange] = useState<TimeRangeKey>(initialRange);
   const [metric, setMetric] = useState<RankingMetric>(initialMetric);
   const [search, setSearch] = useState(initialSearch);
+
+  const RANGES: { value: TimeRangeKey; label: string }[] = [
+    { value: "7d", label: t("leaderboard.range7d") },
+    { value: "30d", label: t("leaderboard.range30d") },
+    { value: "90d", label: t("leaderboard.range90d") },
+    { value: "all", label: t("leaderboard.rangeAll") },
+  ];
+
+  const METRICS: { value: RankingMetric; label: string }[] = [
+    { value: "accuracy", label: t("leaderboard.accuracy") },
+    { value: "default", label: t("leaderboard.default") },
+    { value: "recent", label: t("leaderboard.recentForm") },
+    { value: "profitability", label: t("leaderboard.profitability") },
+  ];
+
+  const typeLabels = {
+    all: t("leaderboard.all"),
+    human: t("leaderboard.human"),
+    ai: t("leaderboard.ai"),
+  } as const;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -80,16 +88,16 @@ export function HomeLeaderboard({
 
   return (
     <section id="leaderboard" className="scroll-mt-20 py-8">
-      <LinedSectionTitle>The leaderboard</LinedSectionTitle>
+      <LinedSectionTitle>{t("leaderboard.title")}</LinedSectionTitle>
       <div className="mt-3 flex flex-col items-center gap-2 text-center sm:flex-row sm:justify-between sm:text-left">
         <p className="text-sm text-[var(--text-muted)]">
-          Compare tipsters and AI models. View profile requires sign-in.
+          {t("leaderboard.subtitle")}
         </p>
         <Link
           href="/leaderboard"
           className="focus-ring text-sm font-medium text-[var(--accent)] hover:underline"
         >
-          View all {totalProfiles} profiles →
+          {t("leaderboard.viewAll", { count: totalProfiles })}
         </Link>
       </div>
 
@@ -99,23 +107,23 @@ export function HomeLeaderboard({
         className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-black p-3 sm:flex-row sm:flex-wrap sm:items-center"
       >
         <label className="min-w-[12rem] flex-1">
-          <span className="sr-only">Search</span>
+          <span className="sr-only">{t("leaderboard.search")}</span>
           <input
             type="search"
             name="q"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name or handle…"
+            placeholder={t("leaderboard.searchPlaceholder")}
             className="focus-ring w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs text-[var(--text)] placeholder:text-[var(--text-dim)]"
           />
         </label>
         <fieldset>
-          <legend className="sr-only">Creator type</legend>
+          <legend className="sr-only">{t("leaderboard.creatorType")}</legend>
           <div className="inline-flex overflow-hidden rounded-md border border-[var(--border)]">
             {(["all", "human", "ai"] as const).map((value) => (
               <label
                 key={value}
-                className={`cursor-pointer px-3 py-1.5 text-xs font-medium capitalize ${
+                className={`cursor-pointer px-3 py-1.5 text-xs font-medium ${
                   profileType === value
                     ? "bg-[var(--accent)] text-[var(--accent-ink)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text)]"
@@ -129,7 +137,7 @@ export function HomeLeaderboard({
                   onChange={() => setProfileType(value)}
                   className="sr-only"
                 />
-                {value}
+                {typeLabels[value]}
               </label>
             ))}
           </div>
@@ -140,7 +148,7 @@ export function HomeLeaderboard({
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)}
             className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs text-[var(--text)]"
-            aria-label="Time range"
+            aria-label={t("leaderboard.timeRange")}
           >
             {RANGES.map((r) => (
               <option key={r.value} value={r.value}>
@@ -153,7 +161,7 @@ export function HomeLeaderboard({
             value={metric}
             onChange={(e) => setMetric(e.target.value as RankingMetric)}
             className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg)] px-2.5 py-1.5 text-xs text-[var(--text)]"
-            aria-label="Ranking metric"
+            aria-label={t("leaderboard.rankingMetric")}
           >
             {METRICS.map((m) => (
               <option key={m.value} value={m.value}>
@@ -165,14 +173,14 @@ export function HomeLeaderboard({
             type="submit"
             className="focus-ring rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
-            Apply
+            {t("leaderboard.apply")}
           </button>
         </div>
       </form>
 
       {visible.length === 0 ? (
         <div className="mt-3 rounded-lg border border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-muted)]">
-          No profiles match these filters.
+          {t("leaderboard.empty")}
         </div>
       ) : (
         <>
@@ -181,12 +189,12 @@ export function HomeLeaderboard({
               <thead className="text-[11px] uppercase tracking-wide text-[var(--text-dim)]">
                 <tr className="border-b border-[var(--border)]">
                   <th className="px-4 py-2.5 font-medium">#</th>
-                  <th className="px-3 py-2.5 font-medium">Name</th>
-                  <th className="px-3 py-2.5 font-medium">Type</th>
-                  <th className="px-3 py-2.5 font-medium">Focus</th>
-                  <th className="px-3 py-2.5 font-medium">Settled</th>
-                  <th className="px-3 py-2.5 font-medium">Accuracy</th>
-                  <th className="px-3 py-2.5 font-medium">Trend</th>
+                  <th className="px-3 py-2.5 font-medium">{t("leaderboardPage.name")}</th>
+                  <th className="px-3 py-2.5 font-medium">{t("leaderboardPage.type")}</th>
+                  <th className="px-3 py-2.5 font-medium">{t("leaderboardPage.focus")}</th>
+                  <th className="px-3 py-2.5 font-medium">{t("aiModelsPage.settledCol")}</th>
+                  <th className="px-3 py-2.5 font-medium">{t("common.accuracy")}</th>
+                  <th className="px-3 py-2.5 font-medium">{t("leaderboardPage.trend")}</th>
                   <th className="px-4 py-2.5 font-medium" />
                 </tr>
               </thead>
@@ -247,7 +255,7 @@ export function HomeLeaderboard({
                           href={lockedProfileHref(entry.profile.slug)}
                           className="focus-ring text-xs font-medium text-[var(--accent)] hover:underline"
                         >
-                          View profile →
+                          {t("common.viewProfile")}
                         </Link>
                       </td>
                     </tr>
@@ -281,7 +289,7 @@ export function HomeLeaderboard({
                     </span>
                     <span className="mt-0.5 block text-[11px] text-[var(--text-dim)]">
                       {formatPercent(entry.summary.accuracy)} · {entry.summary.settledCount}{" "}
-                      settled
+                      {t("common.settled")}
                     </span>
                   </span>
                   <Sparkline form={entry.recentForm} />
@@ -297,10 +305,10 @@ export function HomeLeaderboard({
           <div className="mb-5 flex items-end justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-                Top AI models
+                {t("leaderboardPage.topAi")}
               </p>
               <p className="mt-1 text-sm text-[var(--text-muted)]">
-                Highest accuracy AI predictors right now
+                {t("leaderboardPage.topAiSubtitle")}
               </p>
             </div>
             <button
@@ -308,7 +316,7 @@ export function HomeLeaderboard({
               onClick={() => setProfileType("ai")}
               className="focus-ring shrink-0 text-sm font-medium text-[var(--accent)] hover:underline"
             >
-              Filter AI →
+              {t("leaderboardPage.filterAi")}
             </button>
           </div>
           <ul className="grid gap-4 sm:grid-cols-3">
@@ -332,10 +340,11 @@ export function HomeLeaderboard({
                     {formatPercent(e.summary.accuracy)}
                   </span>
                   <span className="mt-1 text-xs uppercase tracking-wide text-[var(--text-dim)]">
-                    {e.profile.modelType ?? "model"} · {e.summary.settledCount} settled
+                    {e.profile.modelType ?? t("common.model")} · {e.summary.settledCount}{" "}
+                    {t("common.settled")}
                   </span>
                   <span className="mt-5 text-xs font-medium text-[var(--accent)]">
-                    View profile →
+                    {t("common.viewProfile")}
                   </span>
                 </Link>
               </li>
