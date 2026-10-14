@@ -1,4 +1,9 @@
+"use client";
+
+import { useT } from "@/i18n/I18nProvider";
+
 export function TypeBadge({ type }: { type: "human" | "ai" }) {
+  const t = useT();
   const isAi = type === "ai";
   return (
     <span
@@ -8,7 +13,7 @@ export function TypeBadge({ type }: { type: "human" | "ai" }) {
         background: isAi ? "rgba(106,167,255,0.14)" : "var(--accent)",
       }}
     >
-      {isAi ? "AI" : "Human"}
+      {isAi ? t("common.ai") : t("common.human")}
     </span>
   );
 }

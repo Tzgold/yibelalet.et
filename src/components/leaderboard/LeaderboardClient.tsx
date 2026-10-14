@@ -8,20 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
-
-const METRICS: { value: RankingMetric; label: string }[] = [
-  { value: "default", label: "Default (sample-adjusted accuracy)" },
-  { value: "accuracy", label: "Accuracy" },
-  { value: "recent", label: "Recent form window" },
-  { value: "profitability", label: "Profitability (betting records)" },
-];
-
-const RANGES: { value: TimeRangeKey; label: string }[] = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-  { value: "all", label: "All time" },
-];
+import { useT } from "@/i18n/I18nProvider";
 
 export function LeaderboardClient({
   initialEntries,
@@ -44,6 +31,19 @@ export function LeaderboardClient({
   initialCompetition?: string;
   isAuthenticated?: boolean;
 }) {
+  const t = useT();
+  const METRICS: { value: RankingMetric; label: string }[] = [
+    { value: "default", label: t("leaderboardPage.metricDefault") },
+    { value: "accuracy", label: t("leaderboardPage.metricAccuracy") },
+    { value: "recent", label: t("leaderboardPage.metricRecent") },
+    { value: "profitability", label: t("leaderboardPage.metricProfit") },
+  ];
+  const RANGES: { value: TimeRangeKey; label: string }[] = [
+    { value: "7d", label: t("leaderboard.range7d") },
+    { value: "30d", label: t("leaderboard.range30d") },
+    { value: "90d", label: t("leaderboard.range90d") },
+    { value: "all", label: t("leaderboard.rangeAll") },
+  ];
   const profileHref = (slug: string) => profileAccessHref(slug, isAuthenticated);
   const [search, setSearch] = useState(initialSearch);
   const [profileType, setProfileType] = useState<"all" | "human" | "ai">(initialType);
@@ -76,15 +76,12 @@ export function LeaderboardClient({
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <LinedSectionTitle as="h1">Football Leaderboard</LinedSectionTitle>
+        <LinedSectionTitle as="h1">{t("leaderboardPage.title")}</LinedSectionTitle>
         <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
-          Rankings are computed from settled predictions over the selected period.
-          Profiles need at least 10 win/loss settlements to be eligible. Profitability
-          ranking only appears when unit stakes and odds were recorded — accuracy alone
-          never implies profit.
+          {t("leaderboardPage.subtitle")}
         </p>
         <p className="text-center text-sm text-[var(--text-dim)]">
-          {profileCount} public profiles
+          {t("leaderboardPage.publicProfiles", { count: profileCount })}
         </p>
       </header>
 
@@ -94,30 +91,30 @@ export function LeaderboardClient({
         action="/leaderboard"
       >
         <label className="block text-xs text-[var(--text-dim)] lg:col-span-2">
-          Search
+          {t("common.search")}
           <input
             name="q"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, handle, specialty…"
+            placeholder={t("leaderboardPage.searchPlaceholder")}
             className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
           />
         </label>
         <label className="block text-xs text-[var(--text-dim)]">
-          Creator type
+          {t("leaderboardPage.creatorType")}
           <select
             name="type"
             value={profileType}
             onChange={(e) => setProfileType(e.target.value as "all" | "human" | "ai")}
             className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
           >
-            <option value="all">All</option>
-            <option value="human">Human</option>
-            <option value="ai">AI</option>
+            <option value="all">{t("common.all")}</option>
+            <option value="human">{t("common.human")}</option>
+            <option value="ai">{t("common.ai")}</option>
           </select>
         </label>
         <label className="block text-xs text-[var(--text-dim)]">
-          Time range
+          {t("leaderboardPage.timeRange")}
           <select
             name="range"
             value={timeRange}
@@ -132,7 +129,7 @@ export function LeaderboardClient({
           </select>
         </label>
         <label className="block text-xs text-[var(--text-dim)]">
-          Ranking metric
+          {t("leaderboardPage.rankingMetric")}
           <select
             name="metric"
             value={metric}
@@ -147,14 +144,14 @@ export function LeaderboardClient({
           </select>
         </label>
         <label className="block text-xs text-[var(--text-dim)] sm:col-span-2 lg:col-span-3">
-          Competition
+          {t("leaderboardPage.competition")}
           <select
             name="competition"
             value={competitionId}
             onChange={(e) => setCompetitionId(e.target.value)}
             className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
           >
-            <option value="">All competitions</option>
+            <option value="">{t("leaderboardPage.allCompetitions")}</option>
             {competitions.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -167,16 +164,16 @@ export function LeaderboardClient({
             type="submit"
             className="focus-ring w-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] hover:brightness-110"
           >
-            Apply filters
+            {t("common.applyFilters")}
           </button>
         </div>
       </form>
 
       {visible.length === 0 ? (
         <div className="rounded-xl border border-[var(--border)] bg-black p-10 text-center">
-          <h2 className="text-lg font-medium">No profiles match</h2>
+          <h2 className="text-lg font-medium">{t("leaderboardPage.emptyTitle")}</h2>
           <p className="mt-2 text-sm text-[var(--text-muted)]">
-            Try clearing search or widening the creator-type filter.
+            {t("leaderboardPage.emptyHint")}
           </p>
         </div>
       ) : (
@@ -185,13 +182,13 @@ export function LeaderboardClient({
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-[var(--text-dim)]">
                 <tr className="border-b border-[var(--border)]">
-                  <th className="px-4 py-3 font-medium">Rank</th>
-                  <th className="px-4 py-3 font-medium">Profile</th>
-                  <th className="px-4 py-3 font-medium">Record</th>
-                  <th className="px-4 py-3 font-medium">Settled</th>
-                  <th className="px-4 py-3 font-medium">Accuracy</th>
-                  <th className="px-4 py-3 font-medium">ROI</th>
-                  <th className="px-4 py-3 font-medium">Form</th>
+                  <th className="px-4 py-3 font-medium">{t("common.rank")}</th>
+                  <th className="px-4 py-3 font-medium">{t("common.profile")}</th>
+                  <th className="px-4 py-3 font-medium">{t("common.record")}</th>
+                  <th className="px-4 py-3 font-medium">{t("aiModelsPage.settledCol")}</th>
+                  <th className="px-4 py-3 font-medium">{t("common.accuracy")}</th>
+                  <th className="px-4 py-3 font-medium">{t("common.roi")}</th>
+                  <th className="px-4 py-3 font-medium">{t("common.form")}</th>
                   <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
@@ -205,7 +202,7 @@ export function LeaderboardClient({
                       #{entry.rank}
                       {!entry.eligible ? (
                         <span className="ml-2 text-[10px] uppercase text-[var(--text-dim)]">
-                          n/a
+                          {t("common.na")}
                         </span>
                       ) : null}
                     </td>
@@ -241,20 +238,26 @@ export function LeaderboardClient({
                           {formatPercent(entry.summary.roi)}
                         </span>
                       ) : (
-                        <span className="text-[var(--text-dim)]" title="No betting records">
+                        <span className="text-[var(--text-dim)]" title={t("leaderboardPage.noBetting")}>
                           —
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <FormPills form={entry.recentForm} />
+                      <FormPills
+                        form={entry.recentForm}
+                        emptyLabel={t("leaderboardPage.noRecent")}
+                        formLabel={t("leaderboardPage.recentForm", {
+                          form: entry.recentForm.join(" "),
+                        })}
+                      />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={profileHref(entry.profile.slug)}
                         className="focus-ring text-xs font-medium text-[var(--accent)] hover:underline"
                       >
-                        View profile →
+                        {t("common.viewProfile")}
                       </Link>
                     </td>
                   </tr>
@@ -285,19 +288,19 @@ export function LeaderboardClient({
                       </p>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <div>
-                          <p className="text-[var(--text-dim)]">Record</p>
+                          <p className="text-[var(--text-dim)]">{t("common.record")}</p>
                           <p className="tabular-nums">
                             {entry.summary.wins}-{entry.summary.losses}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[var(--text-dim)]">Accuracy</p>
+                          <p className="text-[var(--text-dim)]">{t("common.accuracy")}</p>
                           <p className="tabular-nums">
                             {formatPercent(entry.summary.accuracy)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[var(--text-dim)]">ROI</p>
+                          <p className="text-[var(--text-dim)]">{t("common.roi")}</p>
                           <p className="tabular-nums">
                             {entry.summary.roi != null
                               ? formatPercent(entry.summary.roi)
@@ -306,7 +309,7 @@ export function LeaderboardClient({
                         </div>
                       </div>
                       <div className="mt-2">
-                        <FormPills form={entry.recentForm} />
+                        <FormPills form={entry.recentForm} emptyLabel={t("leaderboardPage.noRecent")} formLabel={t("leaderboardPage.recentForm", { form: entry.recentForm.join(" ") })} />
                       </div>
                       {!entry.eligible && entry.ineligibleReason ? (
                         <p className="mt-2 text-[11px] text-[var(--text-dim)]">
@@ -323,24 +326,32 @@ export function LeaderboardClient({
       )}
 
       <p className="text-xs text-[var(--text-dim)]">
-        Net profit reference (when available):{" "}
+        {t("leaderboardPage.netProfitRef")}{" "}
         {visible
           .filter((e) => e.summary.netProfitUnits != null)
           .slice(0, 1)
           .map((e) => formatUnits(e.summary.netProfitUnits))
-          .join("") || "shown only for profiles with betting records"}
+          .join("") || t("leaderboardPage.bettingOnly")}
         .
       </p>
     </div>
   );
 }
 
-function FormPills({ form }: { form: Array<"W" | "L" | "V" | "P"> }) {
+function FormPills({
+  form,
+  emptyLabel,
+  formLabel,
+}: {
+  form: Array<"W" | "L" | "V" | "P">;
+  emptyLabel: string;
+  formLabel: string;
+}) {
   if (form.length === 0) {
-    return <span className="text-xs text-[var(--text-dim)]">No recent results</span>;
+    return <span className="text-xs text-[var(--text-dim)]">{emptyLabel}</span>;
   }
   return (
-    <span className="inline-flex gap-1" aria-label={`Recent form ${form.join(" ")}`}>
+    <span className="inline-flex gap-1" aria-label={formLabel}>
       {form.map((f, i) => (
         <span
           key={`${f}-${i}`}

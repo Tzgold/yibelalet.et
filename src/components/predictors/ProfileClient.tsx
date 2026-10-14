@@ -33,6 +33,8 @@ import {
 import { Avatar } from "@/components/ui/Avatar";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { FollowSubscribeBar } from "@/components/predictors/FollowSubscribeBar";
+import { useT } from "@/i18n/I18nProvider";
 
 export function ProfileClient({
   profile,
@@ -57,6 +59,11 @@ export function ProfileClient({
   byMarket,
   competitions,
   initialChartRange = "month",
+  socialStatus,
+  subscribePriceEtb,
+  subscribeDays = 30,
+  justSubscribed = false,
+  subscribeError = null,
 }: {
   profile: PredictorProfile;
   rank: number;
@@ -80,8 +87,27 @@ export function ProfileClient({
   byMarket: BreakdownRow[];
   competitions: Competition[];
   initialChartRange?: ChartRangeKey;
+  socialStatus: {
+    followerCount: number;
+    following: boolean;
+    subscribed: boolean;
+  };
+  subscribePriceEtb: number;
+  subscribeDays?: number;
+  justSubscribed?: boolean;
+  subscribeError?: string | null;
 }) {
+  const t = useT();
   const router = useRouter();
+  const weekdayLabels = [
+    t("profile.mon"),
+    t("profile.tue"),
+    t("profile.wed"),
+    t("profile.thu"),
+    t("profile.fri"),
+    t("profile.sat"),
+    t("profile.sun"),
+  ] as const;
   const dayPanelRef = useRef<HTMLDivElement | null>(null);
   const [historyView, setHistoryView] = useState<"tips" | "calendar" | "table">(
     initialSelectedDay ? "calendar" : "tips",
@@ -92,6 +118,7 @@ export function ProfileClient({
   const [chartRange, setChartRange] = useState<ChartRangeKey>(initialChartRange);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const bettingUnlocked = socialStatus.subscribed;
 
   const dayMap = useMemo(() => {
     const map = new Map<string, CalendarDaySummary>();
@@ -139,9 +166,9 @@ export function ProfileClient({
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
-      setShareMsg("Profile link copied");
+      setShareMsg(t("profile.linkCopied"));
     } catch {
-      setShareMsg("Unable to copy link");
+      setShareMsg(t("profile.copyFailed"));
     }
   }
 
@@ -189,7 +216,7 @@ export function ProfileClient({
               </h1>
               <TypeBadge type={profile.profileType} />
               <span className="rounded-md border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--text-muted)]">
-                Rank #{rank || "—"} · {rankingPeriod}
+                {t("profile.rankHash", { rank: rank || "—" })} · {rankingPeriod}
               </span>
             </div>
             <p className="text-sm text-[var(--text-dim)]">{profile.handle}</p>
@@ -197,10 +224,10 @@ export function ProfileClient({
               {profile.bio}
             </p>
             <div className="flex flex-wrap gap-2 text-xs text-[var(--text-dim)]">
-              <span>Joined {profile.joinDate}</span>
+              <span>{t("profile.joined", { date: profile.joinDate })}</span>
               {profile.profileType === "ai" && profile.modelType ? (
                 <span>
-                  Model: {profile.modelType}
+                  {t("profile.modelLabel")} {profile.modelType}
                   {profile.modelVersion ? ` · v${profile.modelVersion}` : ""}
                 </span>
               ) : null}
@@ -213,13 +240,32 @@ export function ProfileClient({
                 </span>
               ))}
             </div>
+            <FollowSubscribeBar
+              slug={profile.slug}
+              displayName={profile.displayName}
+              initialStatus={socialStatus}
+              subscribePriceEtb={subscribePriceEtb}
+              subscribeDays={subscribeDays}
+            />
+
+            {justSubscribed ? (
+              <p className="text-xs text-[var(--positive)]" role="status">
+                {t("profile.paymentVerified")}
+              </p>
+            ) : null}
+            {subscribeError ? (
+              <p className="text-xs text-[var(--negative)]" role="alert">
+                {t("profile.paymentIssue")} {subscribeError}
+              </p>
+            ) : null}
+
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"
                 onClick={onShare}
                 className="focus-ring rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
               >
-                Share profile
+                {t("profile.share")}
               </button>
               {shareMsg ? (
                 <span className="self-center text-xs text-[var(--positive)]" role="status">
@@ -233,23 +279,27 @@ export function ProfileClient({
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Metric
-          label="Net profit"
-          tip="Requires recorded stakes, odds, and settlement. Never inferred from accuracy alone."
+          label={t("profile.netProfit")}
+          tip={t("profile.netProfitTip")}
           value={
-            summary.netProfitUnits != null ? (
+            !bettingUnlocked ? (
+              <span className="text-[var(--text-dim)]">{t("profile.subscribeUnlock")}</span>
+            ) : summary.netProfitUnits != null ? (
               <span className={summary.netProfitUnits >= 0 ? "pos" : "neg"}>
                 {formatUnits(summary.netProfitUnits)}
               </span>
             ) : (
-              <span className="text-[var(--text-dim)]">No betting records</span>
+              <span className="text-[var(--text-dim)]">{t("profile.noBetting")}</span>
             )
           }
         />
         <Metric
-          label="ROI"
-          tip="Net return divided by total stake units on settled betting records."
+          label={t("common.roi")}
+          tip={t("profile.roiTip")}
           value={
-            summary.roi != null ? (
+            !bettingUnlocked ? (
+              <span className="text-[var(--text-dim)]">{t("common.locked")}</span>
+            ) : summary.roi != null ? (
               <span className={summary.roi >= 0 ? "pos" : "neg"}>
                 {formatPercent(summary.roi)}
               </span>
@@ -259,23 +309,23 @@ export function ProfileClient({
           }
         />
         <Metric
-          label="Win–loss–void"
-          tip="Settled outcomes. Draws are wins when the published three-way selection was draw."
+          label={t("profile.winLossVoid")}
+          tip={t("profile.winLossVoidTip")}
           value={`${summary.wins}-${summary.losses}-${summary.voids}`}
         />
         <Metric
-          label="Settled predictions"
-          tip="Count of settled or void predictions in the ranking period."
+          label={t("profile.settledPredictions")}
+          tip={t("profile.settledTip")}
           value={String(summary.settledCount)}
         />
         <Metric
-          label="Accuracy"
-          tip="Wins ÷ (wins + losses). Voids and pushes excluded."
+          label={t("common.accuracy")}
+          tip={t("profile.accuracyTip")}
           value={formatPercent(summary.accuracy)}
         />
         <Metric
-          label="Avg. probability / Brier"
-          tip="Average published selection probability and Brier score (lower is better) when probabilities exist."
+          label={t("profile.avgProbBrier")}
+          tip={t("profile.avgProbTip")}
           value={
             <>
               {formatPercent(summary.averageProbability)}
@@ -288,15 +338,14 @@ export function ProfileClient({
 
       {summary.insufficientSample ? (
         <p className="rounded-lg border border-[var(--border)] bg-[var(--bg-soft)] px-4 py-3 text-sm text-[var(--text-muted)]">
-          Insufficient sample for confident ranking (needs at least {summary.sampleMinimum}{" "}
-          settled win/loss predictions in the selected period).
+          {t("profile.insufficientSample", { min: summary.sampleMinimum })}
         </p>
       ) : null}
 
       <section className="surface rounded-xl p-5">
-        <h2 className="text-lg font-semibold">About & methodology</h2>
+        <h2 className="text-lg font-semibold">{t("profile.aboutMethod")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-[var(--text-muted)]">
-          {profile.methodology || "No methodology description available."}
+          {profile.methodology || t("profile.noMethod")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {profile.competitions.map((id) => {
@@ -315,14 +364,12 @@ export function ProfileClient({
 
       <section className="space-y-3">
         <div className="flex items-end justify-between gap-3">
-          <h2 className="text-lg font-semibold">Open predictions</h2>
-          <p className="text-xs text-[var(--text-dim)]">
-            Locked at kickoff — selections cannot be silently replaced after cutoff.
-          </p>
+          <h2 className="text-lg font-semibold">{t("profile.openPredictions")}</h2>
+          <p className="text-xs text-[var(--text-dim)]">{t("profile.lockedAtKickoff")}</p>
         </div>
         {openPredictions.length === 0 ? (
           <div className="surface rounded-xl p-6 text-sm text-[var(--text-muted)]">
-            No upcoming predictions for this profile.
+            {t("profile.noOpen")}
           </div>
         ) : (
           <ul className="grid gap-3 lg:grid-cols-2">
@@ -337,29 +384,35 @@ export function ProfileClient({
                       {p.homeTeam.name} vs {p.awayTeam.name}
                     </p>
                     <p className="mt-1 text-xs text-[var(--text-muted)]">
-                      Kickoff {formatKickoffLocal(p.match.kickoffAt)}
+                      {t("profile.kickoff")} {formatKickoffLocal(p.match.kickoffAt)}
                     </p>
                   </div>
                   <StatusPill status={p.status} />
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <dt className="text-xs text-[var(--text-dim)]">Market</dt>
+                    <dt className="text-xs text-[var(--text-dim)]">{t("profile.market")}</dt>
                     <dd>{marketLabel(p.marketType)}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-[var(--text-dim)]">Selection</dt>
+                    <dt className="text-xs text-[var(--text-dim)]">{t("profile.selection")}</dt>
                     <dd>
                       {selectionLabel(p.selection, p.homeTeam.name, p.awayTeam.name)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-[var(--text-dim)]">Probability</dt>
+                    <dt className="text-xs text-[var(--text-dim)]">{t("profile.probability")}</dt>
                     <dd>{formatPercent(p.probability)}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-[var(--text-dim)]">Published</dt>
-                    <dd className="text-xs">{formatKickoffLocal(p.publishedAt)}</dd>
+                    <dt className="text-xs text-[var(--text-dim)]">{t("profile.oddsStake")}</dt>
+                    <dd>
+                      {bettingUnlocked
+                        ? p.betting?.oddsAtPublication != null
+                          ? `${p.betting.oddsAtPublication.toFixed(2)} · ${p.betting.stakeUnits}u`
+                          : "—"
+                        : t("common.locked")}
+                    </dd>
                   </div>
                 </dl>
                 {p.note ? (
@@ -375,28 +428,28 @@ export function ProfileClient({
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Historical predictions</h2>
+          <h2 className="text-lg font-semibold">{t("profile.historical")}</h2>
           <div className="inline-flex rounded-md border border-[var(--border)] p-0.5">
             <button
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "tips" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("tips")}
             >
-              Tips
+              {t("profile.tips")}
             </button>
             <button
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "calendar" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("calendar")}
             >
-              Calendar
+              {t("profile.calendar")}
             </button>
             <button
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "table" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("table")}
             >
-              Table
+              {t("profile.table")}
             </button>
           </div>
         </div>
@@ -408,7 +461,7 @@ export function ProfileClient({
           <input type="hidden" name="month" value={calendarMonth} />
           <input type="hidden" name="chart" value={chartRange} />
           <label className="text-xs text-[var(--text-dim)]">
-            From
+            {t("profile.from")}
             <input
               type="date"
               name="from"
@@ -416,7 +469,7 @@ export function ProfileClient({
             />
           </label>
           <label className="text-xs text-[var(--text-dim)]">
-            To
+            {t("profile.to")}
             <input
               type="date"
               name="to"
@@ -424,13 +477,13 @@ export function ProfileClient({
             />
           </label>
           <label className="text-xs text-[var(--text-dim)]">
-            Competition
+            {t("profile.competition")}
             <select
               name="competition"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
               defaultValue=""
             >
-              <option value="">All</option>
+              <option value="">{t("common.all")}</option>
               {competitions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -439,13 +492,13 @@ export function ProfileClient({
             </select>
           </label>
           <label className="text-xs text-[var(--text-dim)]">
-            Market
+            {t("profile.market")}
             <select
               name="market"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
               defaultValue=""
             >
-              <option value="">All</option>
+              <option value="">{t("common.all")}</option>
               <option value="match_result">Match result</option>
               <option value="over_under_2_5">Over/Under 2.5</option>
               <option value="both_teams_to_score">BTTS</option>
@@ -453,17 +506,17 @@ export function ProfileClient({
             </select>
           </label>
           <label className="text-xs text-[var(--text-dim)]">
-            Result
+            {t("profile.result")}
             <select
               name="result"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
               defaultValue="all"
             >
-              <option value="all">All</option>
-              <option value="win">Win</option>
-              <option value="loss">Loss</option>
-              <option value="void">Void</option>
-              <option value="pending">Pending</option>
+              <option value="all">{t("common.all")}</option>
+              <option value="win">{t("common.win")}</option>
+              <option value="loss">{t("common.loss")}</option>
+              <option value="void">{t("common.void")}</option>
+              <option value="pending">{t("common.pending")}</option>
             </select>
           </label>
           <div className="sm:col-span-2 lg:col-span-5">
@@ -471,7 +524,7 @@ export function ProfileClient({
               type="submit"
               className="focus-ring rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[#1a1208]"
             >
-              Filter history
+              {t("profile.filterHistory")}
             </button>
           </div>
         </form>
@@ -480,7 +533,7 @@ export function ProfileClient({
           <div className="space-y-3">
             {historyItems.length === 0 ? (
               <div className="surface rounded-xl p-6 text-sm text-[var(--text-muted)]">
-                No settled tips for these filters.
+                {t("profile.noSettledFilters")}
               </div>
             ) : (
               historyItems.map((row) => (
@@ -518,23 +571,14 @@ export function ProfileClient({
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--text-dim)]">
                     <span>Prob {formatPercent(row.probability)}</span>
-                    {row.betting?.oddsAtPublication != null ? (
-                      <span>Odds {row.betting.oddsAtPublication.toFixed(2)}</span>
-                    ) : null}
-                    {row.betting?.netReturnUnits != null ? (
-                      <span className={row.betting.netReturnUnits >= 0 ? "pos" : "neg"}>
-                        {formatUnits(row.betting.netReturnUnits)}
-                      </span>
-                    ) : (
-                      <span>Prediction record only</span>
-                    )}
+                    <BettingBits row={row} unlocked={bettingUnlocked} />
                   </div>
                 </article>
               ))
             )}
             <div className="flex items-center justify-between pt-1 text-sm">
               <span className="text-[var(--text-dim)]">
-                {historyTotal} tips · page {historyPage}
+                {t("profile.tipsPage", { count: historyTotal, page: historyPage })}
               </span>
               <div className="flex gap-2">
                 <button
@@ -543,7 +587,7 @@ export function ProfileClient({
                   onClick={() => goHistoryPage(historyPage - 1)}
                   className="focus-ring rounded-md border border-[var(--border)] px-3 py-1 disabled:opacity-40"
                 >
-                  Previous
+                  {t("common.previous")}
                 </button>
                 <button
                   type="button"
@@ -551,7 +595,7 @@ export function ProfileClient({
                   onClick={() => goHistoryPage(historyPage + 1)}
                   className="focus-ring rounded-md border border-[var(--border)] px-3 py-1 disabled:opacity-40"
                 >
-                  Next
+                  {t("common.next")}
                 </button>
               </div>
             </div>
@@ -566,7 +610,7 @@ export function ProfileClient({
                   onClick={() => shiftMonth(-1)}
                   disabled={pending}
                 >
-                  Previous
+                  {t("common.previous")}
                 </button>
                 <p className="text-sm font-medium">{calendarMonth}</p>
                 <button
@@ -575,14 +619,12 @@ export function ProfileClient({
                   onClick={() => shiftMonth(1)}
                   disabled={pending}
                 >
-                  Next
+                  {t("common.next")}
                 </button>
               </div>
-              <p className="mb-3 text-xs text-[var(--text-dim)]">
-                Click a day to see the tips they posted that date.
-              </p>
+              <p className="mb-3 text-xs text-[var(--text-dim)]">{t("profile.calendarHint")}</p>
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase text-[var(--text-dim)]">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                {weekdayLabels.map((d) => (
                   <div key={d} className="py-1">
                     {d}
                   </div>
@@ -633,7 +675,9 @@ export function ProfileClient({
                         </span>
                       ) : tipCount > 0 ? (
                         <span className="mt-1 block text-[var(--text-muted)]">
-                          {tipCount} tip{tipCount === 1 ? "" : "s"}
+                          {t(tipCount === 1 ? "profile.tipSingular" : "profile.tipPlural", {
+                            count: tipCount,
+                          })}
                         </span>
                       ) : (
                         <span className="mt-1 block text-[10px] text-[var(--text-dim)]">—</span>
@@ -646,23 +690,25 @@ export function ProfileClient({
 
             <div ref={dayPanelRef} className="surface rounded-xl p-4">
               {!selectedDay ? (
-                <p className="text-sm text-[var(--text-muted)]">
-                  Select a highlighted day on the calendar to load that day&apos;s posted tips.
-                </p>
+                <p className="text-sm text-[var(--text-muted)]">{t("profile.selectDay")}</p>
               ) : (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-base font-semibold">
-                      Tips posted on {selectedDay}
+                      {t("profile.tipsPostedOn", { date: selectedDay })}
                     </h3>
                     <span className="text-xs text-[var(--text-dim)]">
-                      {selectedDayRows.length} tip
-                      {selectedDayRows.length === 1 ? "" : "s"}
+                      {t(
+                        selectedDayRows.length === 1
+                          ? "profile.tipSingular"
+                          : "profile.tipPlural",
+                        { count: selectedDayRows.length },
+                      )}
                     </span>
                   </div>
                   {selectedDayRows.length === 0 ? (
                     <p className="mt-3 text-sm text-[var(--text-muted)]">
-                      No tips were posted on this date.
+                      {t("profile.noTipsDay")}
                     </p>
                   ) : (
                     <ul className="mt-4 space-y-3">
@@ -705,20 +751,13 @@ export function ProfileClient({
                             </p>
                           ) : null}
                           <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--text-dim)]">
-                            <span>Posted {formatKickoffLocal(row.publishedAt)}</span>
+                            <span>
+                              {t("profile.posted", {
+                                time: formatKickoffLocal(row.publishedAt),
+                              })}
+                            </span>
                             <span>Prob {formatPercent(row.probability)}</span>
-                            {row.betting?.oddsAtPublication != null ? (
-                              <span>Odds {row.betting.oddsAtPublication.toFixed(2)}</span>
-                            ) : null}
-                            {row.betting?.netReturnUnits != null ? (
-                              <span
-                                className={
-                                  row.betting.netReturnUnits >= 0 ? "pos" : "neg"
-                                }
-                              >
-                                {formatUnits(row.betting.netReturnUnits)}
-                              </span>
-                            ) : null}
+                            <BettingBits row={row} unlocked={bettingUnlocked} />
                           </div>
                         </li>
                       ))}
@@ -733,23 +772,23 @@ export function ProfileClient({
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[var(--bg-soft)] text-xs uppercase text-[var(--text-dim)]">
                 <tr>
-                  <th className="px-3 py-2">Kickoff</th>
-                  <th className="px-3 py-2">Competition</th>
-                  <th className="px-3 py-2">Match</th>
-                  <th className="px-3 py-2">Market</th>
-                  <th className="px-3 py-2">Selection</th>
-                  <th className="px-3 py-2">Prob</th>
-                  <th className="px-3 py-2">Odds</th>
-                  <th className="px-3 py-2">Score</th>
-                  <th className="px-3 py-2">Outcome</th>
-                  <th className="px-3 py-2">P/L</th>
+                  <th className="px-3 py-2">{t("profile.kickoff")}</th>
+                  <th className="px-3 py-2">{t("profile.competition")}</th>
+                  <th className="px-3 py-2">{t("profile.match")}</th>
+                  <th className="px-3 py-2">{t("profile.market")}</th>
+                  <th className="px-3 py-2">{t("profile.selection")}</th>
+                  <th className="px-3 py-2">{t("profile.probability")}</th>
+                  <th className="px-3 py-2">{t("profile.odds")}</th>
+                  <th className="px-3 py-2">{t("profile.score")}</th>
+                  <th className="px-3 py-2">{t("profile.outcome")}</th>
+                  <th className="px-3 py-2">{t("profile.pl")}</th>
                 </tr>
               </thead>
               <tbody>
                 {historyItems.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-3 py-8 text-center text-[var(--text-muted)]">
-                      No prediction history for these filters.
+                      {t("profile.noHistoryFilters")}
                     </td>
                   </tr>
                 ) : (
@@ -760,7 +799,7 @@ export function ProfileClient({
                       </td>
                       <td className="px-3 py-2">{row.competition.shortName}</td>
                       <td className="px-3 py-2">
-                        {row.homeTeam.shortName} vs {row.awayTeam.shortName}
+                        {row.homeTeam.shortName} {t("common.vs")} {row.awayTeam.shortName}
                       </td>
                       <td className="px-3 py-2">{marketLabel(row.marketType)}</td>
                       <td className="px-3 py-2">
@@ -768,7 +807,9 @@ export function ProfileClient({
                       </td>
                       <td className="px-3 py-2">{formatPercent(row.probability)}</td>
                       <td className="px-3 py-2">
-                        {row.betting?.oddsAtPublication?.toFixed(2) ?? "—"}
+                        {bettingUnlocked
+                          ? (row.betting?.oddsAtPublication?.toFixed(2) ?? "—")
+                          : "•••"}
                       </td>
                       <td className="px-3 py-2 tabular-nums">
                         {row.match.homeScore != null
@@ -779,7 +820,9 @@ export function ProfileClient({
                         <OutcomeText outcome={row.settlementOutcome} status={row.status} />
                       </td>
                       <td className="px-3 py-2">
-                        {row.betting?.netReturnUnits != null ? (
+                        {!bettingUnlocked ? (
+                          "•••"
+                        ) : row.betting?.netReturnUnits != null ? (
                           <span
                             className={
                               row.betting.netReturnUnits >= 0 ? "pos" : "neg"
@@ -798,7 +841,7 @@ export function ProfileClient({
             </table>
             <div className="flex items-center justify-between border-t border-[var(--border)] px-3 py-3 text-sm">
               <span className="text-[var(--text-dim)]">
-                {historyTotal} records · page {historyPage}
+                {t("profile.recordsPage", { count: historyTotal, page: historyPage })}
               </span>
               <div className="flex gap-2">
                 <button
@@ -807,7 +850,7 @@ export function ProfileClient({
                   onClick={() => goHistoryPage(historyPage - 1)}
                   className="focus-ring rounded-md border border-[var(--border)] px-3 py-1 disabled:opacity-40"
                 >
-                  Previous
+                  {t("common.previous")}
                 </button>
                 <button
                   type="button"
@@ -815,7 +858,7 @@ export function ProfileClient({
                   onClick={() => goHistoryPage(historyPage + 1)}
                   className="focus-ring rounded-md border border-[var(--border)] px-3 py-1 disabled:opacity-40"
                 >
-                  Next
+                  {t("common.next")}
                 </button>
               </div>
             </div>
@@ -827,21 +870,21 @@ export function ProfileClient({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
-              {chartMode === "profit" ? "Profit trend" : "Accuracy trend"}
+              {chartMode === "profit" ? t("profile.profitTrend") : t("profile.accuracyTrend")}
             </h2>
             <p className="mt-1 text-xs text-[var(--text-dim)]">
               {chartMode === "profit"
-                ? "Cumulative net profit in stake units from settled betting records."
-                : "Rolling prediction accuracy — financial profit is unavailable for this profile."}
+                ? t("profile.profitTrendDesc")
+                : t("profile.accuracyTrendDesc")}
             </p>
           </div>
           <div className="flex flex-wrap gap-1">
             {(
               [
-                ["week", "Week"],
-                ["month", "Month"],
-                ["year", "Year"],
-                ["all", "All time"],
+                ["week", t("profile.week")],
+                ["month", t("profile.month")],
+                ["year", t("profile.year")],
+                ["all", t("profile.allTime")],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -862,7 +905,7 @@ export function ProfileClient({
         <div className="mt-4 h-64 w-full">
           {chartPoints.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
-              Not enough settled data for this range.
+              {t("profile.notEnoughData")}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -894,22 +937,22 @@ export function ProfileClient({
         </div>
         {settledSeries.length > 0 ? (
           <p className="mt-3 text-xs text-[var(--text-dim)]">
-            Settled predictions in range: {settledSeries[settledSeries.length - 1]?.value ?? 0}
+            {t("profile.settledInRange", {
+              count: settledSeries[settledSeries.length - 1]?.value ?? 0,
+            })}
           </p>
         ) : null}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <BreakdownPanel title="By competition" rows={byCompetition} />
-        <BreakdownPanel title="By market" rows={byMarket} />
+        <BreakdownPanel title={t("profile.byCompetition")} rows={byCompetition} />
+        <BreakdownPanel title={t("profile.byMarket")} rows={byMarket} />
       </section>
 
       {similar.length > 0 ? (
         <section>
-          <h2 className="text-lg font-semibold">Related profiles</h2>
-          <p className="mt-1 text-xs text-[var(--text-dim)]">
-            Based on shared competitions or creator type — not a claim of superior skill.
-          </p>
+          <h2 className="text-lg font-semibold">{t("profile.related")}</h2>
+          <p className="mt-1 text-xs text-[var(--text-dim)]">{t("profile.relatedHint")}</p>
           <ul className="mt-3 grid gap-3 sm:grid-cols-3">
             {similar.map((s) => (
               <li key={s.id}>
@@ -967,9 +1010,11 @@ function OutcomeText({
   outcome: string | null;
   status: string;
 }) {
+  const t = useT();
   if (!outcome) return <span className="text-[var(--text-dim)]">{status}</span>;
-  if (outcome === "win") return <span className="pos">Win</span>;
-  if (outcome === "loss") return <span className="neg">Loss</span>;
+  if (outcome === "win") return <span className="pos">{t("common.win")}</span>;
+  if (outcome === "loss") return <span className="neg">{t("common.loss")}</span>;
+  if (outcome === "void") return <span className="text-[var(--text-muted)]">{t("common.void")}</span>;
   return <span className="text-[var(--text-muted)]">{outcome}</span>;
 }
 
@@ -982,13 +1027,14 @@ function OutcomeBadge({
   status: string;
   score: string | null;
 }) {
+  const t = useT();
   const label =
     outcome === "win"
-      ? "WIN"
+      ? t("common.win").toUpperCase()
       : outcome === "loss"
-        ? "LOSS"
+        ? t("common.loss").toUpperCase()
         : outcome === "void"
-          ? "VOID"
+          ? t("common.void").toUpperCase()
           : status.replaceAll("_", " ").toUpperCase();
   const color =
     outcome === "win"
@@ -1018,11 +1064,12 @@ function OutcomeBadge({
 }
 
 function BreakdownPanel({ title, rows }: { title: string; rows: BreakdownRow[] }) {
+  const t = useT();
   return (
     <div className="surface rounded-xl p-4">
       <h3 className="font-semibold">{title}</h3>
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--text-muted)]">No settled breakdown yet.</p>
+        <p className="mt-3 text-sm text-[var(--text-muted)]">{t("profile.noBreakdown")}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {rows.map((row) => (
@@ -1034,7 +1081,7 @@ function BreakdownPanel({ title, rows }: { title: string; rows: BreakdownRow[] }
                 {row.label}
                 <span className="ml-2 text-xs text-[var(--text-dim)]">
                   n={row.settledCount}
-                  {row.settledCount < 5 ? " · small sample" : ""}
+                  {row.settledCount < 5 ? t("profile.smallSample") : ""}
                 </span>
               </span>
               <span className="tabular-nums text-[var(--text-muted)]">
@@ -1046,6 +1093,35 @@ function BreakdownPanel({ title, rows }: { title: string; rows: BreakdownRow[] }
         </ul>
       )}
     </div>
+  );
+}
+
+function BettingBits({
+  row,
+  unlocked,
+}: {
+  row: PredictionView;
+  unlocked: boolean;
+}) {
+  const t = useT();
+  if (!unlocked) {
+    return <span className="text-[var(--accent)]">{t("profile.bettingLocked")}</span>;
+  }
+  return (
+    <>
+      {row.betting?.oddsAtPublication != null ? (
+        <span>
+          {t("profile.oddsLabel", { odds: row.betting.oddsAtPublication.toFixed(2) })}
+        </span>
+      ) : null}
+      {row.betting?.netReturnUnits != null ? (
+        <span className={row.betting.netReturnUnits >= 0 ? "pos" : "neg"}>
+          {formatUnits(row.betting.netReturnUnits)}
+        </span>
+      ) : (
+        <span>{t("profile.predictionOnly")}</span>
+      )}
+    </>
   );
 }
 
