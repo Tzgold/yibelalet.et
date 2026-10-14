@@ -5,6 +5,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ProfileClient } from "@/components/predictors/ProfileClient";
 import { getRepository } from "@/data/get-repository";
 import { requireUser } from "@/lib/auth";
+import { getSubscribeAmountEtb, getSubscribeDays } from "@/lib/chapa";
+import { getSocialStatus } from "@/lib/social-store";
+import { getViewer } from "@/lib/viewer";
 import type { ChartRangeKey } from "@/domain/types";
 
 /** Profile pages depend on slug params and request filters. */
@@ -73,27 +76,39 @@ export default async function PredictorProfilePage({
 
   if (!detail) notFound();
 
-  const [history, monthTips, dayTips, calendarDays, chartData, breakdowns, competitions] =
-    await Promise.all([
-      repo.getHistory({
-        slug,
-        page,
-        pageSize: 15,
-        from,
-        to,
-        competitionId: competition,
-        marketType: market,
-        resultStatus: result,
-      }),
-      repo.getTipsForMonth(slug, month),
-      selectedDayParam
-        ? repo.getTipsForDay(slug, selectedDayParam)
-        : Promise.resolve([]),
-      repo.getCalendar(slug, month),
-      repo.getChartSeries(slug, chart),
-      repo.getBreakdowns(slug),
-      repo.listCompetitions(),
-    ]);
+  const viewer = await getViewer();
+  const justSubscribed = sp.subscribed === "1" || sp.subscribed === "true";
+  const subscribeError =
+    typeof sp.subscribe_error === "string" ? sp.subscribe_error : null;
+
+  const [
+    history,
+    monthTips,
+    dayTips,
+    calendarDays,
+    chartData,
+    breakdowns,
+    competitions,
+    socialStatus,
+  ] = await Promise.all([
+    repo.getHistory({
+      slug,
+      page,
+      pageSize: 15,
+      from,
+      to,
+      competitionId: competition,
+      marketType: market,
+      resultStatus: result,
+    }),
+    repo.getTipsForMonth(slug, month),
+    selectedDayParam ? repo.getTipsForDay(slug, selectedDayParam) : Promise.resolve([]),
+    repo.getCalendar(slug, month),
+    repo.getChartSeries(slug, chart),
+    repo.getBreakdowns(slug),
+    repo.listCompetitions(),
+    getSocialStatus(viewer?.id ?? null, detail.profile.id),
+  ]);
 
   return (
     <AppShell dataLabel={info.label}>
@@ -128,6 +143,11 @@ export default async function PredictorProfilePage({
         byMarket={breakdowns.byMarket}
         competitions={competitions}
         initialChartRange={chart}
+        socialStatus={socialStatus}
+        subscribePriceEtb={getSubscribeAmountEtb()}
+        subscribeDays={getSubscribeDays()}
+        justSubscribed={justSubscribed}
+        subscribeError={subscribeError}
       />
     </AppShell>
   );
