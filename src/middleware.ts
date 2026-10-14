@@ -1,5 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  MOCK_AUTH_COOKIE,
+  decodeMockSession,
+  isAuthMockEnabled,
+} from "@/lib/auth-mock-edge";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -8,6 +13,13 @@ export async function middleware(request: NextRequest) {
   const isProfileRoute = pathname.startsWith("/predictors/");
   if (!isProfileRoute) {
     return NextResponse.next();
+  }
+
+  if (isAuthMockEnabled()) {
+    const mock = decodeMockSession(request.cookies.get(MOCK_AUTH_COOKIE)?.value);
+    if (mock) {
+      return NextResponse.next();
+    }
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
