@@ -48,14 +48,26 @@ interface WorldCache {
 async function loadWorld(): Promise<WorldCache> {
   const supabase = await createSupabaseServerClient();
 
+  async function loadTable(table: string) {
+    const rows: Record<string, unknown>[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      let query = supabase.from(table).select("*").order("id").range(offset, offset + 999);
+      if (table === "predictor_profiles") query = query.eq("visibility", "public");
+      const { data, error } = await query;
+      if (error) return { data: null, error };
+      rows.push(...data);
+      if (data.length < 1000) return { data: rows, error: null };
+    }
+  }
+
   const [profilesRes, compsRes, teamsRes, matchesRes, predsRes, betsRes] =
     await Promise.all([
-      supabase.from("predictor_profiles").select("*").eq("visibility", "public"),
-      supabase.from("competitions").select("*"),
-      supabase.from("teams").select("*"),
-      supabase.from("football_matches").select("*"),
-      supabase.from("predictions").select("*"),
-      supabase.from("betting_records").select("*"),
+      loadTable("predictor_profiles"),
+      loadTable("competitions"),
+      loadTable("teams"),
+      loadTable("football_matches"),
+      loadTable("predictions"),
+      loadTable("betting_records"),
     ]);
 
   const firstError =

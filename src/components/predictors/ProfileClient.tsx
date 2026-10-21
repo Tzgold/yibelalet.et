@@ -35,6 +35,7 @@ import { InfoTip } from "@/components/ui/InfoTip";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { FollowSubscribeBar } from "@/components/predictors/FollowSubscribeBar";
 import { useT } from "@/i18n/I18nProvider";
+import { PredictionNote } from "./PredictionNote";
 
 export function ProfileClient({
   profile,
@@ -417,7 +418,7 @@ export function ProfileClient({
                 </dl>
                 {p.note ? (
                   <p className="mt-3 text-sm leading-relaxed text-[var(--text-muted)]">
-                    {p.note}
+                    <PredictionNote prediction={p} />
                   </p>
                 ) : null}
               </li>
@@ -566,7 +567,7 @@ export function ProfileClient({
                   </div>
                   {row.note ? (
                     <p className="mt-3 text-sm leading-relaxed text-[var(--text-muted)]">
-                      {row.note}
+                      <PredictionNote prediction={row} />
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--text-dim)]">
@@ -747,7 +748,7 @@ export function ProfileClient({
                           </div>
                           {row.note ? (
                             <p className="mt-3 text-sm leading-relaxed text-[var(--text-muted)]">
-                              {row.note}
+                              <PredictionNote prediction={row} />
                             </p>
                           ) : null}
                           <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--text-dim)]">
