@@ -32,6 +32,12 @@ npm run seed:supabase
 
 Set `LEADERBOARD_DATA_SOURCE=demo` to force demo mode even with credentials.
 
+## Real prediction engine
+
+The HabeshaTips engine has been adapted to the existing Supabase tables. See
+[setup and operations](docs/habeshatips/README.md) for migrations, server-only keys,
+history downloads, `npm run pipeline:daily`, and result settlement.
+
 ## Routes
 
 - `/leaderboard` — searchable, filterable rankings
