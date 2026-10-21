@@ -10,18 +10,26 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:supabase": "tsx --env-file=.env.local scripts/seed-supabase.ts"
+    "seed:supabase": "tsx --env-file=.env.local scripts/seed-supabase.ts",
+    "pipeline:history": "tsx --env-file=.env.local src/pipeline/data/fetch-football-data.ts",
+    "pipeline:seed": "tsx --env-file=.env.local scripts/run-pipeline.ts --only seed",
+    "pipeline:daily": "tsx --env-file=.env.local scripts/run-pipeline.ts",
+    "pipeline:settle": "tsx --env-file=.env.local scripts/run-pipeline.ts --only settle"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
+    "csv-parse": "^7.0.3",
     "date-fns": "^4.4.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
