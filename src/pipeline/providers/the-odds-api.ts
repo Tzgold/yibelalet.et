@@ -8,7 +8,7 @@ import type { Provider, ProviderOdds } from "./types";
 import type { CompetitionCode } from "../data/api-football";
 
 const BASE = "https://api.the-odds-api.com/v4";
-const SPORT_KEYS: Record<CompetitionCode, string> = {
+const SPORT_KEYS: Partial<Record<CompetitionCode, string>> = {
   E0: "soccer_epl",
   SP1: "soccer_spain_la_liga",
   I1: "soccer_italy_serie_a",

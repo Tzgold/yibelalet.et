@@ -9,13 +9,18 @@ import type { Provider, ProviderFixture, ProviderOdds, FixtureStatus } from "./t
 import type { CompetitionCode } from "../data/api-football";
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer";
-const SLUGS: Record<CompetitionCode, string> = {
+export const ESPN_SLUGS: Record<CompetitionCode, string> = {
   E0: "eng.1",
   SP1: "esp.1",
   I1: "ita.1",
   D1: "ger.1",
   F1: "fra.1",
   UCL: "uefa.champions",
+  UEL: "uefa.europa",
+  UECL: "uefa.europa.conf",
+  P1: "por.1",
+  N1: "ned.1",
+  B1: "bel.1",
 };
 
 interface EspnEvent {
@@ -85,10 +90,10 @@ async function fetchScoreboard(competition: CompetitionCode, day: string): Promi
   const yyyymmdd = day.replace(/-/g, "");
   const data = await fetchJson<{ events?: EspnEvent[] }>({
     provider: "espn",
-    url: `${BASE}/${SLUGS[competition]}/scoreboard?dates=${yyyymmdd}`,
+    url: `${BASE}/${ESPN_SLUGS[competition]}/scoreboard?dates=${yyyymmdd}`,
     minIntervalMs: 1_000,
     cache: false,
-    mockKey: `scoreboard_${SLUGS[competition]}_${yyyymmdd}.json`,
+    mockKey: `scoreboard_${ESPN_SLUGS[competition]}_${yyyymmdd}.json`,
   });
   return data.events ?? [];
 }
@@ -102,7 +107,7 @@ function teams(ev: EspnEvent) {
 
 export const espn: Provider = {
   name: "espn",
-  competitions: ["E0", "SP1", "I1", "D1", "F1", "UCL"],
+  competitions: Object.keys(ESPN_SLUGS) as CompetitionCode[],
   budget: { perDay: 400, perMinute: 60, creditsPerMonth: null },
   available: () => process.env.ESPN_DISABLED !== "1",
 

@@ -8,7 +8,7 @@ import type { Provider, ProviderFixture, ProviderStanding, FixtureStatus } from 
 import type { CompetitionCode } from "../data/api-football";
 
 const BASE = "https://api.football-data.org/v4";
-const CODES: Record<CompetitionCode, string> = { E0: "PL", SP1: "PD", I1: "SA", D1: "BL1", F1: "FL1", UCL: "CL" };
+const CODES: Partial<Record<CompetitionCode, string>> = { E0: "PL", SP1: "PD", I1: "SA", D1: "BL1", F1: "FL1", UCL: "CL", P1: "PPL", N1: "DED" };
 
 interface FdMatch {
   id: number;
@@ -47,7 +47,7 @@ function headers() {
 
 export const footballDataOrg: Provider = {
   name: "footballDataOrg",
-  competitions: ["E0", "SP1", "I1", "D1", "F1", "UCL"],
+  competitions: Object.keys(CODES) as CompetitionCode[],
   budget: { perDay: null, perMinute: 10, creditsPerMonth: null },
   available: () => !!process.env.FOOTBALL_DATA_ORG_TOKEN || process.env.PROVIDER_MOCK === "1",
 
