@@ -4,8 +4,8 @@
  * name so sources can be mixed. Canonical spelling = football-data.co.uk (used by the
  * backtest), plus English names for UCL clubs outside the big five leagues.
  *
- * Matching: exact alias → normalised exact → token overlap. Unmatched names are logged
- * so the alias table can be extended; they are never silently guessed.
+ * Matching: exact alias → normalised exact → stable distinct normalized identity.
+ * Explicit aliases join provider names without guessing from shared tokens.
  */
 
 const CANONICAL: Record<string, string[]> = {
@@ -168,6 +168,25 @@ const CANONICAL: Record<string, string[]> = {
   "Sparta Prague": ["AC Sparta Praha", "Sparta Praha", "Sparta Prag"],
   Shkendija: ["KF Shkëndija", "Shkëndija", "KF Shkendija"],
   Ludogorets: ["PFC Ludogorets Razgrad", "Ludogorets Razgrad"],
+  Braga: ["SC Braga", "Sporting Braga", "Sporting Clube de Braga"],
+  "Vitoria Guimaraes": ["Vitória SC", "Vitoria SC", "Vitoria Guimaraes", "Vitória Guimarães", "Vitoria de Guimaraes"],
+  "AZ Alkmaar": ["AZ", "AZ Alkmaar"],
+  Twente: ["FC Twente", "FC Twente Enschede", "FC Twente '65"],
+  Telstar: ["Telstar 1963", "SC Telstar"],
+  "Willem Ii": ["Willem II", "Willem II Tilburg"],
+  Cambuur: ["SC Cambuur-Leeuwarden", "SC Cambuur", "Cambuur Leeuwarden"],
+  Estrela: ["CF Estrela da Amadora", "Estrela Amadora"],
+  Maritimo: ["CS Marítimo", "CS Maritimo", "Marítimo"],
+  "Royal Charleroi": ["Sporting Charleroi", "Royal Charleroi SC", "Charleroi"],
+  "Kvc Westerlo": ["KVC Westerlo", "Westerlo"],
+  "Oh Leuven": ["OH Leuven", "Oud-Heverlee Leuven"],
+  "Raal La Louviere": ["RAAL La Louvière", "La Louvière", "La Louviere"],
+  "Zulte Waregem": ["SV Zulte Waregem"],
+  "Sint Truiden": ["Sint-Truidense VV", "Sint Truidense", "Sint-Truiden"],
+  Anderlecht: ["RSC Anderlecht", "Royal Sporting Club Anderlecht"],
+  "Genk": ["KRC Genk", "Racing Genk"],
+  "Gent": ["KAA Gent", "AA Gent"],
+  "Standard Liege": ["Standard Liège", "Royal Standard de Liège"],
 };
 
 const STOP = new Set([
@@ -205,7 +224,6 @@ for (const [canon, aliases] of Object.entries(CANONICAL)) {
 }
 
 export const CANONICAL_TEAMS = Object.keys(CANONICAL);
-const unmatched = new Set<string>();
 
 export function canonicalTeam(raw: string): string | null {
   const trimmed = raw.trim();
@@ -214,28 +232,9 @@ export function canonicalTeam(raw: string): string | null {
   const norm = normalizeTeam(trimmed);
   const viaNorm = ALIAS.get(norm) ?? NORMALIZED_CANON.get(norm);
   if (viaNorm) return viaNorm;
-  // Token overlap fallback: all tokens of the shorter side must appear in the longer side.
-  const tokens = norm.split(" ").filter(Boolean);
-  let best: string | null = null;
-  let bestScore = 0;
-  for (const [cn, canon] of NORMALIZED_CANON) {
-    const ct = cn.split(" ").filter(Boolean);
-    const inter = ct.filter((t) => tokens.includes(t)).length;
-    if (inter === 0) continue;
-    const score = inter / Math.max(ct.length, tokens.length);
-    if (score > bestScore) {
-      bestScore = score;
-      best = canon;
-    } else if (score === bestScore) {
-      best = null; // ambiguous
-    }
-  }
-  if (best && bestScore >= 0.5) return best;
-  if (!unmatched.has(trimmed)) {
-    unmatched.add(trimmed);
-    console.warn(`teams: no canonical match for "${trimmed}" (normalised "${norm}")`);
-  }
-  return null;
+  // New leagues retain a stable normalized identity. Token overlap can conflate
+  // unrelated clubs (for example Manchester City and Bristol City).
+  return norm ? norm.split(' ').map(word=>word[0].toUpperCase()+word.slice(1)).join(' ') : null;
 }
 
 export function slugTeam(canon: string): string {
