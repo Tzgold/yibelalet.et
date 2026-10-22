@@ -8,6 +8,7 @@ import {
 } from "@/domain/charts";
 import { buildPerformanceSummary, timeRangeStart } from "@/domain/metrics";
 import { buildLeaderboard } from "@/domain/ranking";
+import { withinMatchDays } from "@/lib/matchday";
 import type {
   CalendarDaySummary,
   ChartRangeKey,
@@ -259,7 +260,7 @@ export class DemoRepository implements PredictorRepository {
     };
   }
 
-  async getUpcomingMatches(limit = 12): Promise<UpcomingMatchCard[]> {
+  async getUpcomingMatches(limit = 12, fromDay?: string, days = 2): Promise<UpcomingMatchCard[]> {
     const world = getDemoWorld();
     const featuredIds = [
       "match-feat-liv-mun",
@@ -267,7 +268,7 @@ export class DemoRepository implements PredictorRepository {
       "match-feat-int-mil",
       "match-feat-ars-che",
     ];
-    const scheduled = world.matches.filter((m) => m.matchStatus === "scheduled");
+    const scheduled = world.matches.filter((m) => fromDay ? withinMatchDays(m.kickoffAt,fromDay,days) : m.matchStatus === "scheduled");
     const featured = featuredIds
       .map((id) => scheduled.find((m) => m.id === id))
       .filter((m): m is (typeof scheduled)[number] => Boolean(m));
