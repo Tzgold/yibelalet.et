@@ -59,11 +59,8 @@ export function I18nProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const [locale, setLocaleState] = useState<Locale>(parseLocale(initialLocale));
-
-  useEffect(() => {
-    setLocaleState(parseLocale(initialLocale));
-  }, [initialLocale]);
+  const [localeOverride, setLocaleOverride] = useState<{ base: Locale; value: Locale } | null>(null);
+  const locale = localeOverride?.base === initialLocale ? localeOverride.value : parseLocale(initialLocale);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -73,11 +70,11 @@ export function I18nProvider({
     (next: Locale) => {
       const parsed = parseLocale(next);
       writeLocaleCookie(parsed);
-      setLocaleState(parsed);
+      setLocaleOverride({ base: initialLocale, value: parsed });
       document.documentElement.lang = parsed;
       router.refresh();
     },
-    [router],
+    [router, initialLocale],
   );
 
   const dict = dictionaries[locale];

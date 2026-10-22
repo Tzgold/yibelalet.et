@@ -1,5 +1,6 @@
 {
   "nav": {
+    "dashboard": "ዳሽቦርድ",
     "rankings": "ደረጃዎች",
     "matches": "ግጥሚያዎች",
     "methodology": "ዘዴ",
@@ -13,6 +14,14 @@
     "mobile": "ሞባይል",
     "footer": "ግርጌ",
     "legal": "ህጋዊ"
+  },
+  "company": {
+    "leaderboardTitle": "መዝገብ ከቃል ይበልጣል።",
+    "activityTitle": "የመጨረሻው ፊሽካ። ሙሉ ውጤት።",
+    "matchesTitle": "ቀጣይ በሜዳ ላይ።",
+    "methodTitle": "ሁሉም ትንበያ። አንድ መስፈርት።",
+    "aboutTitle": "ያነሰ ወሬ። የበለጠ ማስረጃ።",
+    "faqTitle": "ተጨማሪ ግልጽነት።"
   },
   "hero": {
     "eyebrow": "የእግር ዋስ ትንበያ ትንተና",
@@ -128,6 +137,8 @@
     "disclaimer": "ትክክለኛነት የውርርድ ትርፍ አይደለም።"
   },
   "auth": {
+    "showPassword": "የይለፍ ቃል አሳይ",
+    "hidePassword": "የይለፍ ቃል ደብቅ",
     "signIn": "ግባ",
     "register": "ተመዝገብ",
     "createAccount": "አካውንት ይፍጠሩ",
@@ -148,26 +159,42 @@
     "backToLanding": "← ወደ መነሻ ተመለስ",
     "mockOtpBanner": "የአካባቢ ሞክ OTP ንቁ ነው። Twilio አያስፈልግም። ከምዝገባ በኩላ ኮድ {code} ይጠቀሙ።",
     "pageIntro": "በኤቲዮጵያ ስልክ ቁጥር ይግቡ ወይም ይመዝገቡ እና የባለሙያ መገለጫዎችን ይክፈቱ።",
+    "loginTitle": "ከእያንዳንዱ ትንበያ በስተጀርባ ያለውን መዝገብ ይመልከቱ።",
+    "authNotConfigured": "መግቢያ ገና አልተዋቀረም። የSupabase URL እና anon key ወደ app environment ያክሉ።",
+    "signinFailed": "መግባት አልተቻለም። የስልክ ቁጥርዎን እና የይለፍ ቃልዎን ያረጋግጡ።",
+    "benefitHuman": "ሰው + AI",
+    "benefitHumanBody": "የተለያዩ አቀራረቦች፣ አንድ ደረጃ ሰንጠረዥ።",
+    "benefitRecord": "በጊዜ ሂደት የሚከታተል",
+    "benefitRecordBody": "ውጤቶች ከታተመው ምርጫ ጋር ይቆያሉ።",
+    "phoneProviderDisabled": "በዚህ Supabase ፕሮጀክት የስልክ OTP አልተነቃም። በSupabase Dashboard ውስጥ Authentication → Sign In / Providers ይክፈቱ፣ Phone ያንቁ እና የSMS አቅራቢ ያዋቅሩ።",
+    "invalidCredentials": "የስልክ ቁጥሩ እና የይለፍ ቃሉ አልተስማሙም። አዲስ መለያ ከሆነ የስልክ ማረጋገጫውን ይጨርሱ።",
+    "networkError": "የመግቢያ አገልግሎት ላይ መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹና እንደገና ይሞክሩ።",
     "landingPage": "መነሻ ገጽ",
     "loading": "በመግቀም ላይ…"
   },
   "social": {
+    "testSubscribe": "ደንበኝነትን ይሞክሩ",
+    "previewCheckout": "የአካባቢ የክፍያ ሙከራ",
+    "previewHint": "የ{name} ትንበያዎችን በሙከራ ይክፈቱ። ገንዘብ አይከፈልም። እውነተኛ ክፍያ ቻፓን ይጠቀማል።",
+    "activateTest": "የሙከራ ደንበኝነት ያስጀምሩ",
+    "noBettingYet": "ትንበያዎች የተረጋገጠ የውርርድ ዋጋ ወይም የትርፍ ዋስትና አያካትቱም።",
+    "networkError": "መገናኘት አልተቻለም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።",
     "followers": "ተከታዮች",
-    "bettingAccess": "የውርርድ መዳረሻ",
+    "bettingAccess": "የትንበያ መዳረሻ",
     "on": "በርቱዋል",
     "off": "ጠፍቱዋል",
     "follow": "ተከተል",
     "following": "በመከተል ላይ",
-    "subscribed": "ተመዝግቧል · ውርርድ ተከፍቱዋል",
+    "subscribed": "ደንበኝነት · ትንበያዎች ተከፍተዋል",
     "subscribe": "ተመዝገብ · {price} ብር",
-    "subscribedHint": "የ{name} እድሎች፣ ውርርዶች እና ውጤቶች ማየት ይችላሉ።",
-    "followHint": "በነጻ ይከተሉ። የ{name} የውርርድ ምክሮችን ለመክፈት በቻፓ ይመዝገቡ።",
+    "subscribedHint": "የ{name} ምርጫዎችን እና ትንታኔዎችን ማየት ይችላሉ።",
+    "followHint": "በነጻ ይከተሉ። የ{name} ትንበያዎችን ለማየት ደንበኛ ይሁኑ።",
     "chapaCheckout": "የቻፓ ክፍያ",
-    "unlockTips": "የውርርድ ምክሮችን ይክፈቱ",
-    "payFor": "ከ{name} እድሎች፣ ውርርዶች እና ትርፍ/ኪሳራ ለ{days} ቀናት {price} ብር ይክፈሉ።",
+    "unlockTips": "የጨዋታ ቀን ትንበያዎችን ይክፈቱ",
+    "payFor": "ለ{days} ቀናት የ{name} ምርጫዎች እና ትንታኔ {price} ብር ይክፈሉ። ተስማሚ ጨዋታ ከሌለ ትንበያ ላይኖር ይችላል።",
     "step1": "1. ቀጥል የቻፓ ክፍያ ገጽ ይከፍታል።",
     "step2": "2. በቴሌብር፣ ሲቢኢ ብር፣ ካርድ ወይም ሌሎች የቻፓ ዘዴዎች ይክፈሉ።",
-    "step3": "3. ወደዚህ ይመለሳሉ እና ከማረጋገጫ በኩላ የውርርድ መዳረሻ ይከፈታል።",
+    "step3": "3. ክፍያው ሲረጋገጥ የዚህ መገለጫ ትንበያዎች ይከፈታሉ።",
     "openingChapa": "ቻፓ በመክፈት ላይ…",
     "continueChapa": "ወደ ቻፓ ቀጥል",
     "cancel": "ሰርዝ",
@@ -179,6 +206,9 @@
     "am": "አማርኛ"
   },
   "common": {
+    "demoProfile": "የማሳያ መገለጫ",
+    "clearFilters": "ማጣሪያዎችን አጥፋ",
+    "push": "ተመላሽ",
     "human": "ሰው",
     "ai": "AI",
     "all": "ሁሉም",
@@ -205,6 +235,9 @@
     "vs": "vs"
   },
   "leaderboardPage": {
+    "topHumans": "ከፍተኛ የሰው ትንበያ ሰጪዎች",
+    "topHumansSubtitle": "በሁሉም ጊዜ የተመዘገበ ትክክለኛነት የተደረጉ ባለሙያዎች።",
+    "viewHumans": "ሁሉም የሰው መገለጫዎች",
     "title": "የእግር ኳስ ሰንጠረዥ",
     "subtitle": "ደረጃዎች ከተሰፈሩ ትንበያዎች በተመረጠው ጊዜ ይሰላሉ። መገለጫዎች ቢያንስ 10 አሸናፊ/ኪሳራ ሰፈራ ያስፈልጋቸዋል። ትርፋማነት የውርርድ መዝገቦች ሲኖሩ ብቻ ይታያል — ትክክለኛነት ብቻ ትርፍ አያረጋግጥም።",
     "publicProfiles": "{count} የህዝብ መገለጫዎች",
@@ -231,11 +264,14 @@
     "trend": "አዝማሚያ",
     "topAi": "ከፍተኛ AI ሞዴሎች",
     "topAiSubtitle": "አሁን ከፍተኛ ትክክለኛነት ያላቸው AI ትንበያ ሰጪዎች",
+    "buildingRecord": "ቀጣይ ትንበያዎች አሉ። በቂ ውጤቶች ከተመዘገቡ በኋላ ደረጃዎች ይጀምራሉ።",
     "filterAi": "AI አጣራ →"
   },
   "matchesPage": {
+    "comparePredictors": "በዚህ ውድድር ያሉ ትንበያ ሰጪዎችን ያወዳድሩ",
+    "demoFixture": "የማሳያ ጨዋታ",
     "title": "መጪ ግጥሚያዎች",
-    "subtitle": "ከአሁኑ የውሂብ ምንጭ የመጡ መጪ ግጥሚያዎች።",
+    "subtitle": "የዛሬ እና የነገ ጨዋታዎች ከስምንት ሊጎች እና ከሶስት የአውሮፓ ዋንጫዎች።",
     "empty": "ምንም መጪ ግጥሚያ የለም።",
     "viewAll": "ሁሉንም ግጥሚያዎች ይመልከቱ →"
   },
@@ -262,13 +298,27 @@
     "step5Body": "ክፍት እና የተሰፈሩ ትንበያዎች ሙሉ መዝገቡን ለማየት ይታያሉ።"
   },
   "profile": {
+    "forecastDetails": "የትንበያ ዝርዝሮች",
+    "publishedAt": "የታተመበት",
+    "forecastVersion": "የትንበያ ስሪት",
+    "selectionRule": "የምርጫ ደንብ",
+    "expectedGoals": "የሚጠበቁ ግቦች",
+    "matchEvidence": "ክብደት ያላቸው ጨዋታዎች · ቤት / እንግዳ",
+    "fixtureSource": "የጨዋታ ምንጭ",
+    "historySource": "የታሪክ ምንጭ",
+    "noVerifiedPrice": "የተረጋገጠ ዋጋ የለም",
+    "navigation": "የመገለጫ ክፍሎች",
+    "overview": "አጠቃላይ እይታ",
+    "performance": "አፈጻጸም",
     "share": "መገለጫ አጋራ",
     "linkCopied": "የመገለጫ ሊንክ ተቀድቱዋል",
     "copyFailed": "ሊንክ መቅዳት አልተቻለም",
     "rankHash": "ደረጃ #{rank}",
+    "buildingRecord": "ውጤቶችን በመሰብሰብ ላይ",
     "joined": "ተቀላቅሏዋል {date}",
     "modelLabel": "ሞዴል:",
-    "paymentVerified": "ክፍያ ተረጋግጧል — የውርርድ ምክሮች ተከፍተዋል።",
+    "paymentVerified": "ክፍያ ተረጋግጧል — የጨዋታ ቀን ትንበያዎች ተከፍተዋል።",
+    "testSubscriptionActive": "የሙከራ ደንበኝነት ተከፍቷል — ክፍያ አልተወሰደም።",
     "paymentIssue": "የደንበኝነት ክፍያ ችግር:",
     "netProfit": "የተጣራ ትርፍ",
     "netProfitTip": "የተመዘገቡ ውርርዶች፣ እድሎች እና ሰፈራ ያስፈልጋል። ዝርዝር ለመክፈት ይመዝገቡ።",
@@ -286,7 +336,8 @@
     "aboutMethod": "ስለ እኛ እና ዘዴ",
     "noMethod": "የዘዴ መግለጫ የለም።",
     "openPredictions": "ክፍት ትንበያዎች",
-    "lockedAtKickoff": "በገዋታ መጀመሪያ ይቆለፋል — ከጊዜ በኩላ በድብቅ አይቀየርም።",
+    "openTip": "የመጨረሻ ውጤት የሚጠብቁ የታተሙ ትንበያዎች።",
+    "lockedAtKickoff": "ሲታተም ይቆለፋል። እያንዳንዱ ትንበያ የመጀመሪያውን ምርጫ እና ትንታኔ ይጠብቃል።",
     "noOpen": "ለዚህ መገለጫ መጪ ትንበያ የለም።",
     "kickoff": "መጀመሪያ",
     "market": "ገበያ",
@@ -345,9 +396,13 @@
     "thu": "ሁሙስ",
     "fri": "አርብ",
     "sat": "ቅዳሜ",
-    "sun": "እሁድ"
+    "sun": "እሁድ",
+    "subscriberPick": "ለደንበኞች የተዘጋጀ ትንበያ",
+    "subscriberHint": "ምርጫውን እና የጨዋታ ትንታኔውን ለማየት ለዚህ መገለጫ ይመዝገቡ።"
   },
   "heroExtra": {
+    "featuredTip": "የታተመ ትንበያ",
+    "fixturePreview": "የሚመጣ ጨዋታ · ትንበያ በመጠባበቅ ላይ",
     "homeWin": "የቤት አሸናፊ",
     "draw": "አቻ",
     "awayWin": "የእንግዳ አሸናፊ",
@@ -370,5 +425,22 @@
     "notFoundTitle": "መገለጫ አልተገኛም",
     "notFoundBody": "ያ የባለሙያ ስልግ የለም ወይም ለህዝብ አይደለም።",
     "backLeaderboard": "ወደ ሰንጠረዝ ተመለስ"
+  },
+  "matchday": {
+    "availablePicks": "ከ{count} ፕሮፋይሎች የተሰጡ ትንበያዎች",
+    "awaitingPicks": "እስካሁን የታተመ ትንበያ የለም",
+    "scheduled": "ቀጣይ ጨዋታ",
+    "live": "በቀጥታ",
+    "finished": "ተጠናቋል",
+    "postponed": "ተራዝሟል",
+    "cancelled": "ተሰርዟል",
+    "today": "ዛሬ",
+    "tomorrow": "ነገ",
+    "bothDays": "ሁለቱም ቀናት",
+    "allOpen": "ሁሉም ቀጣይ",
+    "chooseDay": "የጨዋታ ቀን ይምረጡ",
+    "timezone": "የጨዋታ ቀን እና ሰዓት · የኢትዮጵያ ሰዓት (UTC+3)",
+    "noFixtures": "በዚህ ምርጫ ጨዋታ የለም። ሌላ ቀን ወይም ውድድር ይምረጡ።",
+    "noProfilePicks": "ለዚህ ቀን የተመረጠ ትንበያ የለም። የነገውን ወይም የጨዋታ መርሃ ግብር ይመልከቱ።"
   }
 }
