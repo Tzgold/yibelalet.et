@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isChapaConfigured, isChapaMockEnabled, verifyChapaPayment } from "@/lib/chapa";
-import { activateSubscriptionByTxRef } from "@/lib/social-store";
+import { activateSubscriptionByTxRef, getSubscriptionByTxRef } from "@/lib/social-store";
+import { getViewer } from "@/lib/viewer";
 
 /**
  * Chapa callback_url hits this after payment.
@@ -18,11 +19,14 @@ export async function GET(request: Request) {
   }
 
   try {
+    const pending = await getSubscriptionByTxRef(txRef);
+    if(!pending)return NextResponse.json({error:'Unknown transaction'},{status:404});
+    if(isChapaMockEnabled() && (await getViewer())?.id!==pending.userId)return NextResponse.json({error:'Not your test transaction'},{status:403});
     if (!isChapaMockEnabled()) {
       if (!isChapaConfigured()) {
         return NextResponse.json({ error: "Chapa not configured" }, { status: 503 });
       }
-      const ok = await verifyChapaPayment(txRef);
+      const ok = await verifyChapaPayment(txRef,pending.amountEtb);
       if (!ok) {
         return NextResponse.json({ error: "Payment not successful" }, { status: 400 });
       }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isChapaConfigured, isChapaMockEnabled, verifyChapaPayment } from "@/lib/chapa";
-import { activateSubscriptionByTxRef } from "@/lib/social-store";
+import { activateSubscriptionByTxRef, getSubscriptionByTxRef } from "@/lib/social-store";
+import { getViewer } from "@/lib/viewer";
 
 /** Browser return_url after Chapa checkout — verify then send user back to profile. */
 export async function GET(request: Request) {
@@ -20,9 +21,12 @@ export async function GET(request: Request) {
   if (!txRef) return fail("missing_tx");
 
   try {
+    const pending=await getSubscriptionByTxRef(txRef);
+    if(!pending)return fail('unknown_tx');
+    if(isChapaMockEnabled() && (await getViewer())?.id!==pending.userId)return fail('not_your_test_transaction');
     if (!isChapaMockEnabled()) {
       if (!isChapaConfigured()) return fail("chapa_not_configured");
-      const ok = await verifyChapaPayment(txRef);
+      const ok = await verifyChapaPayment(txRef,pending.amountEtb);
       if (!ok) return fail("payment_failed");
     }
 

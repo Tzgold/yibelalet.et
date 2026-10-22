@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { activateSubscriptionByTxRef } from "@/lib/social-store";
+import { activateSubscriptionByTxRef, getSubscriptionByTxRef } from "@/lib/social-store";
 import { isChapaMockEnabled } from "@/lib/chapa";
+import { getViewer } from "@/lib/viewer";
 
 /** Dev-only: skip Chapa UI and activate subscription immediately. */
 export async function GET(request: Request) {
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing tx_ref" }, { status: 400 });
   }
 
+  const pending=await getSubscriptionByTxRef(txRef);
+  const viewer=await getViewer();
+  if(!pending||!viewer||pending.userId!==viewer.id)return NextResponse.json({error:'Not your test transaction'},{status:403});
   await activateSubscriptionByTxRef(txRef);
   const origin = new URL(request.url).origin;
   return NextResponse.redirect(

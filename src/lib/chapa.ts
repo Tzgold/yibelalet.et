@@ -7,7 +7,7 @@ export function getSubscribeAmountEtb() {
 export function getSubscribeDays() {
   const raw = process.env.CHAPA_SUBSCRIBE_DAYS ?? "30";
   const days = Number(raw);
-  return Number.isFinite(days) && days > 0 ? Math.floor(days) : 30;
+  return Number.isFinite(days) && days > 0 ? Math.min(366,Math.floor(days)) : 30;
 }
 
 export function isChapaConfigured() {
@@ -17,8 +17,10 @@ export function isChapaConfigured() {
 /** Mock only when explicitly enabled — real Chapa is the default. */
 export function isChapaMockEnabled() {
   return (
+    process.env.NODE_ENV === "development" && (
     process.env.CHAPA_MOCK === "true" ||
     process.env.NEXT_PUBLIC_CHAPA_MOCK === "true"
+    )
   );
 }
 
@@ -108,7 +110,7 @@ export async function initializeChapaPayment(input: {
   return json.data.checkout_url;
 }
 
-export async function verifyChapaPayment(txRef: string) {
+export async function verifyChapaPayment(txRef: string, expectedAmount: number) {
   const secret = process.env.CHAPA_SECRET_KEY?.trim();
   if (!secret) {
     throw new Error("CHAPA_SECRET_KEY is missing");
@@ -125,7 +127,7 @@ export async function verifyChapaPayment(txRef: string) {
 
   const json = (await res.json()) as {
     status?: string;
-    data?: { status?: string };
+    data?: { status?: string; amount?: string | number; currency?: string; tx_ref?: string; mode?: string };
     message?: string;
   };
 
@@ -133,5 +135,8 @@ export async function verifyChapaPayment(txRef: string) {
     throw new Error(json.message ?? "Could not verify Chapa payment");
   }
 
-  return json.data?.status === "success";
+  return json.data?.status === "success" &&
+    json.data.tx_ref === txRef && json.data.currency === 'ETB' &&
+    Number.isFinite(Number(json.data.amount)) && Number(json.data.amount) === expectedAmount &&
+    json.data.mode === (secret.startsWith('CHASECK_TEST') ? 'test' : 'live');
 }

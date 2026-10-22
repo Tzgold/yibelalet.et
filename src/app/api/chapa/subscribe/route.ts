@@ -9,6 +9,7 @@ import {
 } from "@/lib/chapa";
 import { createPendingSubscription } from "@/lib/social-store";
 import { getViewer } from "@/lib/viewer";
+import { randomUUID } from "node:crypto";
 
 export async function POST(request: Request) {
   const viewer = await getViewer();
@@ -30,7 +31,8 @@ export async function POST(request: Request) {
 
   const amount = getSubscribeAmountEtb();
   const days = getSubscribeDays();
-  const txRef = `sub-${detail.profile.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}-${Date.now()}`;
+  if (!isChapaConfigured() && !isChapaMockEnabled()) return NextResponse.json({error:'Chapa is not configured. Add CHAPA_SECRET_KEY to enable checkout.'},{status:503});
+  const txRef = `sub-${randomUUID()}`;
 
   await createPendingSubscription({
     userId: viewer.id,
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
       returnUrl,
       callbackUrl,
       title: "Yibelalet Sub",
-      description: `${days}d betting tips · ${detail.profile.displayName}`,
+      description: `${days}d matchday picks · ${detail.profile.displayName}`,
     });
     return NextResponse.json({
       mock: false,
