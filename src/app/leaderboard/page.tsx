@@ -83,15 +83,9 @@ export default async function LeaderboardPage({
           <h1 className="text-xl font-semibold">Could not load leaderboard</h1>
           <p className="mt-2 text-sm text-[var(--text-muted)]">{error}</p>
         </div>
-      ) : entries.length === 0 && !q ? (
-        <div className="surface rounded-xl p-8 text-center">
-          <h1 className="text-xl font-semibold">Leaderboard is empty</h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">
-            No public profiles are available for the current data source.
-          </p>
-        </div>
       ) : (
         <LeaderboardClient
+          key={[q, type, range, metric, competition].join(":")}
           initialEntries={entries}
           competitions={competitions}
           profileCount={entries.length}

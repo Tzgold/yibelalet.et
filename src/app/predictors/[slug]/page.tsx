@@ -5,10 +5,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ProfileClient } from "@/components/predictors/ProfileClient";
 import { getRepository } from "@/data/get-repository";
 import { requireUser } from "@/lib/auth";
-import { getSubscribeAmountEtb, getSubscribeDays } from "@/lib/chapa";
+import { getSubscribeAmountEtb, getSubscribeDays, isChapaMockEnabled } from "@/lib/chapa";
 import { getSocialStatus } from "@/lib/social-store";
 import { getViewer } from "@/lib/viewer";
 import type { ChartRangeKey } from "@/domain/types";
+import { predictionAccess } from "@/lib/prediction-access";
+import { matchDay } from "@/lib/matchday";
 
 /** Profile pages depend on slug params and request filters. */
 export const instant = false;
@@ -124,15 +126,16 @@ export default async function PredictorProfilePage({
         profile={detail.profile}
         rank={detail.rank}
         rankingPeriod={detail.rankingPeriod}
-        summary={detail.summary}
-        openPredictions={detail.openPredictions}
+        summary={{...detail.summary,averageProbability:socialStatus.subscribed?detail.summary.averageProbability:null}}
+        openPredictions={detail.openPredictions.map(p=>predictionAccess(p,socialStatus.subscribed))}
+        today={matchDay(new Date())}
         similar={detail.similar}
-        historyItems={history.items}
+        historyItems={history.items.map(p=>predictionAccess(p,socialStatus.subscribed))}
         historyTotal={history.total}
         historyPage={history.page}
         historyPageSize={history.pageSize}
-        monthHistoryItems={monthTips}
-        selectedDayTips={dayTips}
+        monthHistoryItems={monthTips.map(p=>predictionAccess(p,socialStatus.subscribed))}
+        selectedDayTips={dayTips.map(p=>predictionAccess(p,socialStatus.subscribed))}
         initialSelectedDay={selectedDayParam}
         calendarDays={calendarDays}
         calendarMonth={month}
@@ -146,7 +149,8 @@ export default async function PredictorProfilePage({
         socialStatus={socialStatus}
         subscribePriceEtb={getSubscribeAmountEtb()}
         subscribeDays={getSubscribeDays()}
-        justSubscribed={justSubscribed}
+        checkoutPreview={isChapaMockEnabled()}
+        justSubscribed={justSubscribed && socialStatus.subscribed}
         subscribeError={subscribeError}
       />
     </AppShell>

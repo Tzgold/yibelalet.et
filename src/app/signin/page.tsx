@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
 import { SignInChrome } from "@/components/auth/SignInChrome";
+import { BrandLogo, BrandMark } from "@/components/ui/BrandLogo";
 
 export const instant = false;
 
@@ -15,15 +16,11 @@ export default async function SignInPage({
   const errorCode = typeof params.error === "string" ? params.error : null;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-[var(--border)]">
-        <div className="page-shell flex h-12 items-center justify-between gap-3">
+    <div className="auth-site">
+      <header className="auth-header">
+        <div className="page-shell flex items-center justify-between gap-3">
           <Link href="/" className="focus-ring flex items-center gap-2">
-            <span
-              aria-hidden
-              className="inline-block h-3.5 w-3.5 rotate-45 bg-[var(--accent)]"
-            />
-            <span className="text-sm font-semibold">Yibelalet</span>
+            <BrandLogo />
           </Link>
           <div className="flex items-center gap-3">
             <LanguageSwitch />
@@ -31,13 +28,29 @@ export default async function SignInPage({
           </div>
         </div>
       </header>
-      <main className="page-shell flex flex-1 flex-col items-center justify-center gap-4 py-10">
-        <SignInChrome variant="banner" errorCode={errorCode} />
-        <SignInChrome variant="intro" />
-        <Suspense fallback={<SignInChrome variant="loading" />}>
-          <SignInForm />
-        </Suspense>
+      <main className="page-shell auth-layout">
+        <div className="auth-story">
+          <p className="company-eyebrow"><span className="company-status-dot" aria-hidden /><SignInChrome variant="eyebrow" /></p>
+          <h1>
+            <SignInChrome variant="intro" />
+          </h1>
+          <p className="auth-story-description">
+            <SignInChrome variant="subtitle" />
+          </p>
+          <div className="auth-benefits">
+            <div><span aria-hidden>01</span><div><h2><SignInChrome variant="benefitHuman" /></h2><p><SignInChrome variant="benefitHumanBody" /></p></div></div>
+            <div><span aria-hidden>02</span><div><h2><SignInChrome variant="benefitRecord" /></h2><p><SignInChrome variant="benefitRecordBody" /></p></div></div>
+          </div>
+          <div className="auth-emblem" aria-hidden><BrandMark /><span>YIBELALET<br />FOOTBALL INTELLIGENCE</span></div>
+        </div>
+        <div className="auth-form-column">
+          <SignInChrome variant="banner" errorCode={errorCode} />
+          <Suspense fallback={<SignInChrome variant="loading" />}>
+            <SignInForm key={params.mode === "register" ? "register" : "signin"} />
+          </Suspense>
+        </div>
       </main>
+      <footer className="page-shell auth-footer"><span>© 2026 Yibelalet</span><span><SignInChrome variant="footnote" /></span></footer>
     </div>
   );
 }
