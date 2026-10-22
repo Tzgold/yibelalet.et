@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
 import { useT } from "@/i18n/I18nProvider";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const LANDING_LINK_DEFS = [
   { href: "/#leaderboard", hash: "leaderboard", key: "nav.rankings" },
@@ -23,9 +24,11 @@ const APP_LINK_DEFS = [
 export function SiteHeader({
   dataLabel,
   variant = "app",
+  isAuthenticated = false,
 }: {
   dataLabel?: string;
   variant?: "landing" | "app";
+  isAuthenticated?: boolean;
 }) {
   const t = useT();
   const pathname = usePathname();
@@ -82,14 +85,10 @@ export function SiteHeader({
           href={variant === "landing" ? "/" : "/leaderboard"}
           className="focus-ring flex shrink-0 items-center gap-2.5"
         >
-          <span
-            aria-hidden
-            className="inline-block h-3.5 w-3.5 rotate-45 bg-[var(--accent)]"
-          />
-          <span className="text-[15px] font-semibold tracking-tight">Yibelalet</span>
+          <BrandLogo />
         </Link>
         <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 md:flex"
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
           aria-label="Primary"
         >
           {variant === "landing"
@@ -99,6 +98,7 @@ export function SiteHeader({
                   <a
                     key={link.href}
                     href={link.href}
+                    aria-current={active ? "location" : undefined}
                     className={`focus-ring relative px-2.5 py-1 text-[13px] ${
                       active
                         ? "text-[var(--text)]"
@@ -119,6 +119,7 @@ export function SiteHeader({
                   <Link
                     key={link.href}
                     href={link.href}
+                    aria-current={active ? "page" : undefined}
                     className={`focus-ring relative px-2.5 py-1 text-[13px] ${
                       active
                         ? "text-[var(--text)]"
@@ -143,7 +144,7 @@ export function SiteHeader({
             </span>
           ) : null}
           <LanguageSwitch />
-          <Link
+          {isAuthenticated ? <Link href="/leaderboard" className="focus-ring workspace-account-link">{t("nav.dashboard")} <span aria-hidden>↗</span></Link> : <><Link
             href="/signin"
             className="focus-ring px-2.5 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text)]"
           >
@@ -155,10 +156,11 @@ export function SiteHeader({
           >
             {t("nav.register")}
           </Link>
+          </>}
         </div>
       </div>
       <nav
-        className="page-shell flex gap-1 overflow-x-auto border-t border-[var(--border)] py-1.5 md:hidden"
+        className="page-shell flex gap-1 overflow-x-auto border-t border-[var(--border)] py-1.5 lg:hidden"
         aria-label={t("nav.mobile")}
       >
         {variant === "landing"

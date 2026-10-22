@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useT } from "@/i18n/I18nProvider";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function SiteFooter() {
   const t = useT();
@@ -25,11 +26,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-[var(--border)]">
       <div className="page-shell flex flex-col gap-5 py-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="inline-block h-2.5 w-2.5 rotate-45 bg-[var(--accent)]"
-          />
-          <span className="text-sm font-semibold">Yibelalet</span>
+          <BrandLogo />
         </div>
 
         <nav
