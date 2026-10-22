@@ -5,6 +5,7 @@
 import type { Match } from "../data/football-data";
 import type { Prediction } from "../model/dixon-coles";
 import type { FormSummary } from "../data/form";
+import type { CompetitionCode } from "../data/api-football";
 import { implied1x2, impliedOU } from "../model/odds";
 
 export type Market = "1X2" | "OU25" | "BTTS";
@@ -28,7 +29,7 @@ export interface Candidate {
 }
 
 export interface MatchContext {
-  match: Pick<Match, "home" | "away" | "league" | "date">;
+  match: Pick<Match, "home" | "away" | "date"> & { league: CompetitionCode };
   /** Blended prediction used for decisions. */
   pred: Prediction;
   /** Raw model prediction, for reference and for the written rationale. */

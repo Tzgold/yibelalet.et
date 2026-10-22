@@ -55,6 +55,16 @@ describe('Supabase publication and settlement transactions', () => {
     expect(result.rows[0].settlement_outcome).toBe('win');
     expect(Number(result.rows[0].net_return_units)).toBe(1.5);
   });
+  it('locks and settles an unpriced forecast without creating fictional returns', async () => {
+    await db.exec(`insert into predictions(id,profile_id,match_id,market_type,selection,probability,published_at,locked_at,model_version,status)
+      values('unpriced','p','m2','double_chance','home_or_draw',0.8,now(),now(),'live-test','upcoming');`);
+    await expect(db.exec("insert into predictions select * from predictions where id='unpriced'")).rejects.toThrow('duplicate key');
+    await expect(db.exec("update predictions set probability=0.9 where id='unpriced'")).rejects.toThrow('Locked predictions');
+    await db.exec("select settle_prediction('unpriced','win',now()); select settle_prediction('unpriced','loss',now());");
+    const result = await db.query<{ settlement_outcome: string }>("select settlement_outcome from predictions where id='unpriced'");
+    expect(result.rows[0].settlement_outcome).toBe('win');
+    expect((await db.query("select * from betting_records where prediction_id='unpriced'")).rows).toHaveLength(0);
+  });
   it('denies pipeline RPC execution to anonymous and signed-in users', async () => {
     for (const role of ['anon', 'authenticated']) {
       const permissions = await db.query<{ allowed: boolean }>(`select has_function_privilege($1, 'public.publish_pipeline_tip(jsonb,integer)', 'EXECUTE') as allowed`, [role]);

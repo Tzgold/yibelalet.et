@@ -19,7 +19,9 @@ function seasonCode(year: number) { return `${String(year % 100).padStart(2, '0'
 export async function seedStrategies(db: PipelineDb) {
   const competitionIds = COMPETITION_CODES.map((code) => `ht-comp-${code}`);
   check((await db.from('competitions').upsert(COMPETITION_CODES.map((code) => ({
-    id: `ht-comp-${code}`, name: COMPETITIONS[code].name, short_name: code, country: COMPETITIONS[code].country,
+    id: `ht-comp-${code}`, name: COMPETITIONS[code].name,
+    short_name: ({ E0: 'EPL', SP1: 'La Liga', I1: 'Serie A', D1: 'Bundesliga', F1: 'Ligue 1', P1: 'Primeira Liga', N1: 'Eredivisie', B1: 'Pro League', UCL: 'UCL', UEL: 'Europa League', UECL: 'Conference League' })[code],
+    country: COMPETITIONS[code].country,
   })))).error);
   // Preserve the original join date when rerunning the seed.
   const existing = await allRows(db, 'predictor_profiles');
