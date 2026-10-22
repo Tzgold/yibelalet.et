@@ -1,0 +1,54 @@
+name: Matchday forecasts
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Publish today/tomorrow or refresh results
+        type: choice
+        options: [daily, settle]
+        default: daily
+  schedule:
+    - cron: '0 3,12 * * *' # 06:00 and 15:00 Ethiopian time
+    - cron: '*/30 13-22 * * *' # Result refresh during European match hours
+permissions:
+  contents: read
+concurrency:
+  group: matchday-pipeline
+  cancel-in-progress: false
+jobs:
+  forecasts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check server configuration
+        run: node -e "if(!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Add Supabase URL and service-role key in GitHub Actions secrets')"
+      - name: Restore completed results
+        if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
+        uses: actions/cache/restore@v4
+        with:
+          path: .data/openfootball
+          key: openfootball-${{ github.run_id }}
+          restore-keys: openfootball-
+      - name: Refresh history and publish matchday picks
+        if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
+        run: |
+          npm run pipeline:history
+          npx --no-install tsx scripts/run-live-profiles.ts --days 2
+      - name: Cache completed results
+        if: success() && (github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily')
+        uses: actions/cache/save@v4
+        with:
+          path: .data/openfootball
+          key: openfootball-${{ github.run_id }}
+      - name: Refresh results
+        if: github.event.schedule == '*/30 13-22 * * *' || inputs.operation == 'settle'
+        run: npx --no-install tsx scripts/run-live-profiles.ts --settle-only

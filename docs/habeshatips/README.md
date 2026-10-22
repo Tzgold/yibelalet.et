@@ -1,87 +1,92 @@
 # HabeshaTips engine in Yibelalet
 
-The engine in `src/pipeline/` is adapted from
-https://github.com/yihalem123/habeshatips at commit
-`8c9dfec78f2cff0f024cf6a5d031e440d29ab30a`. The original copyright and license
-are preserved in `LICENSE` in this directory. The original website, authentication,
-payments and delivery services are not imported. Yibelalet keeps its existing UI.
+The statistical engine in `src/pipeline/` is adapted from
+[HabeshaTips](https://github.com/yihalem123/habeshatips) at commit
+`8c9dfec78f2cff0f024cf6a5d031e440d29ab30a`. Its copyright and license are
+preserved in `LICENSE` in this directory. Authentication, payments and the website
+remain Yibelalet's implementations.
 
-## Setup
+## Run the live profile pipeline
 
-1. Apply `supabase/migrations/20261012170000_football_leaderboard.sql` if it has
-   not already been applied, then `20261021090000_prediction_pipeline.sql` in the
-   Supabase SQL editor. Do not rerun the first migration on an existing database.
-2. Configure `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY` and the server-only `SUPABASE_SERVICE_ROLE_KEY`.
-   Never use the service-role key in the browser or put it in a `NEXT_PUBLIC_` variable.
-3. Download history for the previous two seasons and current season:
-   `npm run pipeline:history -- --from 2425 --to 2627` (update season codes each year).
-4. Run `npm run pipeline:seed`, then
-   `npm run pipeline:daily -- --skip-claude --limit 3` for an initial model-only run.
-   `--limit` restricts analyzed fixtures; it does not bypass room criteria. No picks
-   is valid when evidence, odds or strategy thresholds are missing.
-5. After successful ingestion, set `LEADERBOARD_DATA_SOURCE=supabase` and restart
-   the site. Do not run the demo seed against production. Existing demo profiles
-   are preserved; they should be reviewed separately before switching a demo-seeded
-   database to production.
+1. Apply `supabase/migrations/20261012170000_football_leaderboard.sql` if the
+   database is new, then `20261021090000_prediction_pipeline.sql` and
+   `20261022120000_matchday_subscriptions.sql`. Do not rerun
+   the base migration on an existing database.
+2. Configure `.env.local` with `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, server-only `SUPABASE_SERVICE_ROLE_KEY`, and
+   `LEADERBOARD_DATA_SOURCE=supabase`. Never expose the service key in the browser.
+3. Run `npm run pipeline:history`. This downloads the current and previous two
+   seasons of completed results across eight domestic leagues from
+   [OpenFootball football.json](https://github.com/openfootball/football.json),
+   published under CC0. Cache files and provenance are in `.data/openfootball`.
+4. Run `npm run pipeline:profiles` (also available as `pipeline:daily`). It reads
+   actual fixtures from ESPN's public scoreboard and publishes qualifying picks
+   across all 31 configured profiles, including the 13 existing human profile
+   identities. These test identities keep their existing demo-profile status;
+   their new forecasts are statistical model outputs.
+5. Run `npm run pipeline:settle` to refresh results and settle open forecasts.
 
-Optional server-side keys: `FOOTBALL_DATA_ORG_TOKEN` for fixtures/standings,
-`THE_ODDS_API_KEY` for bookmaker prices, `ANTHROPIC_API_KEY` for English/Amharic
-written analysis. Set `ANALYSIS_MODEL` to a model enabled for your Anthropic account.
-Without these keys, keyless providers are used and model-only tips can be generated
-where real odds and sufficient history exist. Claude failures fall back to model
-picks, clearly marked as having no written analysis. Mock data is refused by the
-live runner. No network APIs or paid model calls run during unit tests.
+The live profile path does not require Football Data, Odds API or Anthropic keys
+and does not make paid model calls. It refuses mock provider input. ESPN is an
+unofficial public endpoint; failures are reported and no fixture is invented.
+The optional older six-room odds/analysis pipeline remains available as
+`npm run pipeline:rooms` and uses its own provider keys and criteria.
 
-## Scheduled operation
+Useful options: `--days 2` (today and tomorrow by default; allowed 1–14), `--date YYYY-MM-DD`,
+`--dry-run`, `--refresh-history` and `--settle-only`. Matchdays use Ethiopian time
+(UTC+3); UTC provider queries include the overlapping previous date. Publication always uses the
+actual current timestamp and requires kickoff to be more than two minutes away.
+Dry runs read providers and usage accounting, but do not publish or configure profiles.
 
-Run scripts on a persistent Node host with the repository, dependencies, `.env.local`
-and `.data/football-data` present, with its working directory set to this project.
-The website does not run the model during page requests. No external scheduler is
-installed by this change.
+## Forecast and result contract
 
-- Run `npm run pipeline:daily` each morning (for example, 06:00 Africa/Addis_Ababa).
-- Run `npm run pipeline:settle` periodically during/after matches (for example,
-  every 30 minutes). It refreshes the dates of all unresolved tips, not just today.
-- Refresh current-season training CSVs daily with `npm run pipeline:history -- --from 2627 --to 2627`.
-- Monitor script exit codes and the returned analyzed/published/settled counts.
-  Provider failures are logged; fallback exhaustion can leave no new tips or results.
+- `profile-strategies.ts` defines different markets, league focus, probability
+  thresholds, evidence requirements and daily caps. These are filters over a
+  shared time-decayed Dixon-Coles model, not 31 independently trained models.
+- Only completed historical scores before the training cutoff enter fitting.
+  Missing scores are skipped. History older than 45 days blocks new publication.
+  Teams without sufficient weighted evidence are skipped, including UCL teams
+  not covered by the domestic training history.
+- Notes are specific to the fixture and strategy: venue/recent form, expected
+  goals or balanced-result probabilities. Metadata records the model version,
+  source, training cutoff, evidence, expected goals and publication hash.
+- Current statistical forecasts have no verified bookmaker price. They create
+  predictions without betting records; no odds, returns or ROI are manufactured.
+- Deterministic profile/matchday/slot IDs make repeated runs idempotent and enforce
+  this runner's cap per kickoff day. Existing match/market picks are skipped. Published
+  selections and probabilities are locked by the existing database trigger.
+  This path does not use the legacy priced-publication RPC's cross-publisher cap.
+- The Supabase repository excludes demo matches, demo-seeded predictions and
+  their betting records from live history, rankings, calendars and charts.
+  Those database rows are preserved. Profiles build a new record as real results
+  settle; insufficient samples do not display a rank.
+- Settlement uses verified regulation-time scores, including double chance.
+  Cancelled matches void predictions; postponed matches remain pending. Missing
+  scores and extra-time/penalty totals cannot settle a regulation-time pick.
+  Settlement RPCs preserve the first result on retries.
+- Provider fixture IDs preserve identity across rescheduling when the upstream
+  ID is stable. Provider request usage is tracked privately in Supabase.
+  Original profile metadata is backed up locally before first configuration.
 
-`--date YYYY-MM-DD` selects a UTC fixture day; tips are still published only before
-their actual kickoff and publication time is always the real current time.
-Historical inputs cannot manufacture a live track record.
+## Ongoing operation
 
-## Data contract
+The website reads stored records; page requests do not run the model. A GitHub
+Actions workflow is prepared in `.github/workflows/matchday-pipeline.yml`; enable
+it by publishing it to the default branch and configuring its Supabase secrets.
+Alternatively, on a persistent Node host with this repository, dependencies,
+`.env.local` and `.data/openfootball`, run `pipeline:history` daily,
+`pipeline:daily` each morning and `pipeline:settle` during/after matches.
+Monitor exit codes and published/settled/provider-error counts. A profile can
+have no new pick when its rules do not qualify any actual fixture.
 
-- Six strategy profiles use `ht-strategy-*` IDs and `habeshatips-*` slugs.
-  They are filters over one Dixon-Coles model blended 80% toward margin-free
-  bookmaker prices, not six independently trained models. Claude supplies optional
-  commentary; its probabilities do not replace the published model probabilities.
-- Normalized teams, matches, predictions and betting records go into the same tables
-  the existing repository reads. Rankings/charts recalculate from settled records.
-- Each tip records its model version, analysis reference, provider, bookmaker,
-  English note, Amharic rationale in source metadata and a SHA-256 content hash.
-  Profile tips show the Amharic rationale when the site language is Amharic,
-  falling back to the English note when a translation is unavailable.
-  Full packets and Claude responses are in the service-only `pipeline_analyses` table.
-- Publication and its one-unit betting record are atomic. Original predictions and
-  odds survive retries. Database profile locks enforce daily caps across publishers.
-  Published picks lock immediately and cannot change selection or probability.
-- Settlement is atomic and idempotent. Cancelled matches void the bet; postponed
-  matches stay pending. Unknown/missing scores and extra-time totals are not treated
-  as regulation-time results. Outcomes use 90 minutes plus stoppage time.
-- Provider usage is stored privately in Supabase. Provider responses cache in
-  `.data/provider-cache` for at most five minutes when caching is enabled.
-- Fixture identity follows the upstream canonical-team/competition/UTC-day key.
-  Rescheduling to a different UTC day requires reconciling the original match ID
-  with the new provider fixture; until reconciled, the original tip stays pending.
-- CSV history covers the big five domestic leagues. UCL fixtures can use the same
-  team evidence; teams absent from training are skipped by evidence rules.
+See [WORKFLOW.md](WORKFLOW.md) for the original repository's full flow, the matchday
+adaptation, subscriber access and the remaining deployment setup. Do not accept
+real payments until the subscription migration has been applied and Chapa tested.
 
 ## Validation
 
-`npm test` includes model mapping tests and embedded PostgreSQL tests for both
-migrations, publication rollback, duplicates, daily caps, kickoff rejection,
-settlement idempotency and RPC permissions. Run `npm run typecheck`, `npm run lint`
-and `npm run build` before release. A live provider/database smoke test still needs
-your project credentials and applied migrations.
+Run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build`.
+Tests cover score validation, distinct strategies, immutable publication slots,
+demo exclusion, regulation-time settlement, database locking/idempotency and
+publication permissions. Unit tests use local fixtures and embedded PostgreSQL;
+they make no network or paid API calls.
