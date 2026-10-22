@@ -4,22 +4,23 @@ import Link from "next/link";
 import type { RecentSettledTip } from "@/data/repository";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubLogo } from "@/components/ui/ClubLogo";
-import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
-import { formatRelative } from "@/lib/format";
+import { formatRelative, selectionLabel } from "@/lib/format";
 import { useT } from "@/i18n/I18nProvider";
 
 export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
   const t = useT();
   if (tips.length === 0) return null;
 
-  const wins = tips.filter((tip) => tip.view.settlementOutcome === "win").length;
-  const losses = tips.length - wins;
+  const visibleTips = tips.slice(0, 5);
+  const wins = visibleTips.filter((tip) => tip.view.settlementOutcome === "win").length;
+  const losses = visibleTips.filter((tip) => tip.view.settlementOutcome === "loss").length;
 
   return (
-    <section className="py-10">
-      <LinedSectionTitle>{t("activity.title")}</LinedSectionTitle>
+    <section className="company-activity company-section">
+      <p className="company-eyebrow">{t("activity.title")}</p>
+      <h2>{t("company.activityTitle")}</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[var(--text-muted)]">
         {t("activity.subtitle")}
       </p>
@@ -43,7 +44,7 @@ export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
         </div>
 
         <ul className="divide-y divide-[var(--border)]">
-          {tips.map(({ view, profile }) => {
+          {visibleTips.map(({ view, profile }) => {
             const win = view.settlementOutcome === "win";
             return (
               <li key={view.id}>
@@ -97,7 +98,7 @@ export function LandingActivity({ tips }: { tips: RecentSettledTip[] }) {
 
                   <span>
                     <span className="inline-flex max-w-full items-center bg-[var(--bg)] px-2 py-1 text-xs font-medium text-[var(--text-muted)]">
-                      <span className="truncate">{view.selection}</span>
+                      <span className="truncate">{selectionLabel(view.selection, view.homeTeam.name, view.awayTeam.name)}</span>
                     </span>
                   </span>
 

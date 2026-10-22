@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRef } from "react";
 import type { UpcomingMatchCard } from "@/data/repository";
 import { ClubLogo } from "@/components/ui/ClubLogo";
-import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { useT } from "@/i18n/I18nProvider";
 
 function splitKickoff(iso: string) {
@@ -35,8 +34,9 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
   }
 
   return (
-    <section id="matches" className="scroll-mt-20 py-12">
-      <LinedSectionTitle>{t("matches.title")}</LinedSectionTitle>
+    <section id="matches" className="company-matches company-section">
+      <p className="company-eyebrow">02 / {t("matches.title")}</p>
+      <h2>{t("company.matchesTitle")}</h2>
 
       <div className="mt-8">
         <ul
@@ -95,7 +95,7 @@ export function LandingMatches({ matches }: { matches: UpcomingMatchCard[] }) {
                 </div>
 
                 <Link
-                  href="/signin?next=%2Fmatches"
+                  href="/matches"
                   className="mt-4 inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
                 >
                   {t("common.viewDetails")}

@@ -5,24 +5,6 @@ import type { UpcomingMatchCard } from "@/data/repository";
 import { ClubLogo } from "@/components/ui/ClubLogo";
 import { useT } from "@/i18n/I18nProvider";
 
-const DEMO_ODDS = [
-  [
-    { label: "Home win", value: 0.48, color: "var(--accent)" },
-    { label: "Draw", value: 0.27, color: "#5b8def" },
-    { label: "Away win", value: 0.25, color: "#ef5a6f" },
-  ],
-  [
-    { label: "Home win", value: 0.41, color: "var(--accent)" },
-    { label: "Draw", value: 0.29, color: "#5b8def" },
-    { label: "Away win", value: 0.3, color: "#ef5a6f" },
-  ],
-  [
-    { label: "Home win", value: 0.36, color: "var(--accent)" },
-    { label: "Draw", value: 0.31, color: "#5b8def" },
-    { label: "Away win", value: 0.33, color: "#ef5a6f" },
-  ],
-] as const;
-
 const FALLBACK: UpcomingMatchCard = {
   match: {
     id: "fallback-ars-che",
@@ -67,7 +49,6 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
 
   const total = slides.length;
   const current = slides[((index % total) + total) % total];
-  const rows = DEMO_ODDS[index % DEMO_ODDS.length];
 
   function go(delta: number) {
     setDir(delta >= 0 ? "right" : "left");
@@ -97,7 +78,7 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
     <div className="relative mx-auto w-full max-w-[400px] lg:mx-0 lg:justify-self-end">
       <aside
         key={animKey}
-        className={`relative min-h-[400px] overflow-hidden rounded-xl border border-[var(--border)] bg-black p-6 sm:p-7 ${
+        className={`relative min-h-[400px] overflow-hidden rounded-2xl border border-white/10 bg-[#101419] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.45)] sm:p-8 ${
           dir === "right" ? "animate-slide-in-right" : "animate-slide-in-left"
         }`}
       >
@@ -120,17 +101,18 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
               {current.competition.shortName}
             </span>
-            <span className="text-[11px] text-[var(--text-dim)]">
+            <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-[var(--text-dim)]">
               {index + 1}/{total}
             </span>
           </div>
 
-          <div className="mt-8 flex items-center justify-between gap-3">
+          <div className="mt-10 flex items-center justify-between gap-3">
             <div className="flex flex-1 flex-col items-center gap-3 text-center">
               <ClubLogo
                 name={current.homeTeam.name}
                 logoUrl={current.homeTeam.logoUrl}
                 size={58}
+                loading={index === 0 ? "eager" : "lazy"}
               />
               <span className="text-sm font-semibold leading-tight">
                 {current.homeTeam.name}
@@ -144,6 +126,7 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
                 name={current.awayTeam.name}
                 logoUrl={current.awayTeam.logoUrl}
                 size={58}
+                loading={index === 0 ? "eager" : "lazy"}
               />
               <span className="text-sm font-semibold leading-tight">
                 {current.awayTeam.name}
@@ -153,21 +136,9 @@ export function HeroMatchCarousel({ matches }: { matches: UpcomingMatchCard[] })
 
           <p className="mt-5 text-center text-sm text-[var(--text-muted)]">{when}</p>
 
-          <div className="mt-auto space-y-3.5 pt-7">
-            {rows.map((row) => (
-              <div key={row.label}>
-                <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span className="text-[var(--text-muted)]">{row.label}</span>
-                  <span className="tabular font-semibold">{Math.round(row.value * 100)}%</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-1.5 rounded-full transition-[width] duration-700 ease-out"
-                    style={{ width: `${row.value * 100}%`, background: row.color }}
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="mt-auto border-t border-white/10 pt-5 text-center">
+            <p className="text-xs font-medium text-[var(--text-muted)]">{current.competition.name}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--text-dim)]">{t("heroExtra.fixturePreview")}</p>
           </div>
         </div>
       </aside>

@@ -29,18 +29,18 @@ export function LandingStats({ profileCount }: { profileCount: number }) {
   ];
 
   return (
-    <section className="border-y border-[var(--border)] py-8">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="company-stats border-y border-white/[0.09] py-7 sm:py-8">
+      <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-0">
         {items.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl border border-[var(--border)] bg-black px-5 py-5 transition hover:border-[rgba(245,158,11,0.35)]"
+            className="px-4 first:pl-0 sm:border-r sm:border-white/[0.09] sm:px-6 sm:last:border-0 sm:first:pl-0"
           >
-            <p className="text-3xl font-semibold tracking-tight text-[var(--accent)]">
+            <p className="text-3xl font-semibold tracking-tight text-[var(--text)] sm:text-4xl">
               {item.value}
             </p>
-            <p className="mt-2 text-sm font-semibold text-[var(--text)]">{item.label}</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-dim)]">
+            <p className="mt-1 text-sm font-medium text-[var(--text)]">{item.label}</p>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--text-dim)]">
               {item.detail}
             </p>
           </div>

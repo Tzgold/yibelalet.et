@@ -10,7 +10,10 @@ import { LandingHowItWorks } from "@/components/home/LandingHowItWorks";
 import { LandingMatches } from "@/components/home/LandingMatches";
 import { LandingStats } from "@/components/home/LandingStats";
 import { getRepository } from "@/data/get-repository";
+import { getSessionUser } from "@/lib/auth";
 import type { RankingMetric, TimeRangeKey } from "@/domain/types";
+import { predictionAccess } from "@/lib/prediction-access";
+import { hasActiveSubscription } from "@/lib/social-store";
 
 export const instant = false;
 
@@ -52,16 +55,19 @@ export default async function HomePage({
 
   const repo = getRepository();
   const info = repo.getDataSourceInfo();
+  const user = await getSessionUser();
 
   let entries: Awaited<ReturnType<typeof repo.getLeaderboard>> = [];
+  let featuredEntries: typeof entries = [];
   let totalProfiles = 25;
   let upcoming: Awaited<ReturnType<typeof repo.getUpcomingMatches>> = [];
   let showcase: Awaited<ReturnType<typeof repo.getShowcaseMatch>> = null;
+  let sampleTip: Awaited<ReturnType<typeof repo.getSampleOpenTip>> = null;
   let recentTips: Awaited<ReturnType<typeof repo.getRecentSettledTips>> = [];
   let error: string | null = null;
 
   try {
-    const [board, allBoard, matches, heroMatch, activity] = await Promise.all([
+    const [board, allBoard, matches, heroMatch, activity, openTip] = await Promise.all([
       repo.getLeaderboard({
         search: q || undefined,
         profileType: type,
@@ -76,12 +82,15 @@ export default async function HomePage({
       repo.getUpcomingMatches(6),
       repo.getShowcaseMatch(),
       repo.getRecentSettledTips(10),
+      repo.getSampleOpenTip(),
     ]);
     entries = board;
+    featuredEntries = allBoard;
     totalProfiles = allBoard.length;
     upcoming = matches;
     showcase = heroMatch;
     recentTips = activity;
+    sampleTip = openTip ? predictionAccess(openTip, user ? await hasActiveSubscription(user.id,openTip.profileId) : false) : null;
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load landing data";
   }
@@ -94,6 +103,9 @@ export default async function HomePage({
             ...(showcase ? [showcase] : []),
             ...upcoming.filter((m) => m.match.id !== showcase?.match.id).slice(0, 4),
           ]}
+          sampleTip={sampleTip}
+          sampleProfile={featuredEntries.find((e) => e.profile.id === sampleTip?.profileId)?.profile ?? null}
+          isAuthenticated={Boolean(user)}
         />
         <LandingStats profileCount={totalProfiles} />
 
@@ -104,6 +116,8 @@ export default async function HomePage({
         ) : (
           <HomeLeaderboard
             entries={entries}
+            featuredEntries={featuredEntries}
+            isAuthenticated={Boolean(user)}
             totalProfiles={totalProfiles}
             initialType={type}
             initialRange={range}

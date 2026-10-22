@@ -1,53 +1,11 @@
 "use client";
 
-import { ImagePanelCard } from "@/components/ui/ImagePanelCard";
-import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { useT } from "@/i18n/I18nProvider";
-
-const IMAGES = [
-  "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1600&q=85",
-  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1600&q=85",
-  "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1600&q=85",
-] as const;
 
 export function LandingAbout() {
   const t = useT();
-
-  const items = [
-    {
-      title: t("about.item1Title"),
-      body: t("about.item1Body"),
-      image: IMAGES[0],
-    },
-    {
-      title: t("about.item2Title"),
-      body: t("about.item2Body"),
-      image: IMAGES[1],
-    },
-    {
-      title: t("about.item3Title"),
-      body: t("about.item3Body"),
-      image: IMAGES[2],
-    },
-  ];
-
-  return (
-    <section id="about" className="scroll-mt-20 py-12">
-      <LinedSectionTitle>{t("about.title")}</LinedSectionTitle>
-      <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[var(--text-muted)]">
-        {t("about.subtitle")}
-      </p>
-
-      <div className="mt-8 grid gap-4 lg:grid-cols-3">
-        {items.map((item) => (
-          <ImagePanelCard
-            key={item.title}
-            imageUrl={item.image}
-            title={item.title}
-            body={item.body}
-          />
-        ))}
-      </div>
-    </section>
-  );
+  return <section id="about" className="company-about company-section">
+    <div className="company-about-statement"><p className="company-eyebrow">04 / {t("about.title")}</p><h2>{t("company.aboutTitle")}</h2><p>{t("about.subtitle")}</p><div className="company-record-mark" aria-hidden><span>Y.</span><span>HUMAN × AI<br />FOOTBALL ANALYTICS</span></div></div>
+    <div className="company-principles">{[1, 2, 3].map((n) => <article key={n}><span aria-hidden>0{n}</span><div><h3>{t(`about.item${n}Title`)}</h3><p>{t(`about.item${n}Body`)}</p></div></article>)}</div>
+  </section>;
 }
