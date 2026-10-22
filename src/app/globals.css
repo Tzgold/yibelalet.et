@@ -23,7 +23,7 @@
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
-  --font-sans: var(--font-outfit);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-plex);
 }
 
@@ -44,11 +44,11 @@ body {
   margin: 0;
   background-color: #000000;
   color: var(--text);
-  font-family: var(--font-outfit), "Segoe UI", sans-serif;
+  font-family: var(--font-body), "Segoe UI", sans-serif;
 }
 
 html[lang="am"] body {
-  font-family: var(--font-ethiopic), var(--font-outfit), "Segoe UI", sans-serif;
+  font-family: var(--font-ethiopic), var(--font-body), "Segoe UI", sans-serif;
 }
 
 a {
@@ -100,6 +100,18 @@ select {
 .page-shell {
   width: min(1180px, calc(100% - 2rem));
   margin-inline: auto;
+}
+
+
+.landing-hero {
+  background-color: #0d1014;
+  background-image:
+    radial-gradient(ellipse at 2% 0%, rgba(245, 158, 11, 0.11), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 48%);
+}
+
+.landing-hero-glow {
+  background-image: linear-gradient(90deg, rgba(6, 7, 9, 0.08), rgba(6, 7, 9, 0.22));
 }
 
 .sport-card {

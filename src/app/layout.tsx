@@ -1,13 +1,27 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { IBM_Plex_Mono, Noto_Sans_Ethiopic, Outfit } from "next/font/google";
+import { Barlow_Condensed, IBM_Plex_Mono, Inter, Noto_Sans_Ethiopic } from "next/font/google";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { LOCALE_COOKIE, parseLocale } from "@/i18n/config";
 import "./globals.css";
+import "./landing.css";
+import "./design-system.css";
+import "./workspace.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+// Locale selection reads the request cookie, including on legal and error pages.
+export const instant = false;
+
+const inter = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const display = Barlow_Condensed({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  display: "swap",
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -35,7 +49,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={locale}
-      className={`${outfit.variable} ${plexMono.variable} ${notoEthiopic.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${display.variable} ${plexMono.variable} ${notoEthiopic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <I18nProvider initialLocale={locale}>{children}</I18nProvider>
