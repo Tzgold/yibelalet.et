@@ -7,7 +7,7 @@ import { createSupabaseBrowserClient, isAuthConfigured } from "@/lib/supabase/cl
 import { useT } from "@/i18n/I18nProvider";
 
 const PREFIX = "+2519";
-const MOCK_ENABLED = process.env.NEXT_PUBLIC_AUTH_MOCK === "true";
+const MOCK_ENABLED = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_AUTH_MOCK === "true";
 
 type Mode = "signin" | "register";
 type Step = "form" | "otp";
@@ -19,6 +19,20 @@ function safeNextPath(raw: string | null): string {
 
 function fullPhone(localDigits: string): string {
   return `${PREFIX}${localDigits}`;
+}
+
+function authErrorKey(message: string): string | null {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("phone login") && normalized.includes("disabled") || normalized.includes("phone logins are disabled")) {
+    return "phoneProviderDisabled";
+  }
+  if (normalized.includes("invalid login credentials")) {
+    return "invalidCredentials";
+  }
+  if (normalized.includes("fetch failed") || normalized.includes("network")) {
+    return "networkError";
+  }
+  return null;
 }
 
 export function SignInForm() {
@@ -34,6 +48,7 @@ export function SignInForm() {
   const [localDigits, setLocalDigits] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [mockOtpHint, setMockOtpHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,12 +57,18 @@ export function SignInForm() {
 
   const phone = fullPhone(localDigits);
 
+  function friendlyAuthError(message: string) {
+    const key = authErrorKey(message);
+    return key ? t(`auth.${key}`) : message;
+  }
+
   function switchMode(next: Mode) {
     setMode(next);
     setStep("form");
     setOtp("");
     setPassword("");
     setConfirmPassword("");
+    setShowPassword(false);
     setMockOtpHint(null);
     setMessage(null);
     setError(null);
@@ -106,14 +127,18 @@ export function SignInForm() {
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      phone,
-      password,
-    });
+    let signInError: { message: string } | null = null;
+    try {
+      ({ error: signInError } = await supabase.auth.signInWithPassword({ phone, password }));
+    } catch {
+      setBusy(false);
+      setError(t("auth.networkError"));
+      return;
+    }
     setBusy(false);
 
     if (signInError) {
-      setError(signInError.message);
+      setError(friendlyAuthError(signInError.message));
       return;
     }
 
@@ -172,14 +197,25 @@ export function SignInForm() {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
-      phone,
-      password,
-    });
+    let signupData: Awaited<ReturnType<typeof supabase.auth.signUp>>["data"];
+    let signUpError: Awaited<ReturnType<typeof supabase.auth.signUp>>["error"];
+    try {
+      ({ data: signupData, error: signUpError } = await supabase.auth.signUp({ phone, password }));
+    } catch {
+      setBusy(false);
+      setError(t("auth.networkError"));
+      return;
+    }
     setBusy(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(friendlyAuthError(signUpError.message));
+      return;
+    }
+
+    if (signupData.session) {
+      router.replace(nextPath);
+      router.refresh();
       return;
     }
 
@@ -222,15 +258,18 @@ export function SignInForm() {
       return;
     }
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      phone,
-      token: otp.trim(),
-      type: "sms",
-    });
+    let verifyError: { message: string } | null = null;
+    try {
+      ({ error: verifyError } = await supabase.auth.verifyOtp({ phone, token: otp.trim(), type: "sms" }));
+    } catch {
+      setBusy(false);
+      setError(t("auth.networkError"));
+      return;
+    }
     setBusy(false);
 
     if (verifyError) {
-      setError(verifyError.message);
+      setError(friendlyAuthError(verifyError.message));
       return;
     }
 
@@ -247,16 +286,17 @@ export function SignInForm() {
     : "/signin?mode=register";
 
   return (
-    <div className="w-full max-w-md border border-[var(--border)] bg-black p-5 sm:p-6">
+    <div className="auth-card" aria-busy={busy}>
       {MOCK_ENABLED ? (
         <p className="mb-4 rounded-md border border-[rgba(245,158,11,0.35)] bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--accent)]">
           {t("auth.mockOtpBanner", { code: "123456" })}
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--border)] p-1">
+      <div className="auth-mode-switch grid grid-cols-2 gap-1 rounded-lg border border-[var(--border)] p-1">
         <Link
           href={signInHref}
+          aria-current={mode === "signin" ? "page" : undefined}
           onClick={() => switchMode("signin")}
           className={`rounded-md px-3 py-2 text-center text-sm font-medium ${
             mode === "signin"
@@ -268,6 +308,7 @@ export function SignInForm() {
         </Link>
         <Link
           href={registerHref}
+          aria-current={mode === "register" ? "page" : undefined}
           onClick={() => switchMode("register")}
           className={`rounded-md px-3 py-2 text-center text-sm font-medium ${
             mode === "register"
@@ -279,9 +320,9 @@ export function SignInForm() {
         </Link>
       </div>
 
-      <h1 className="mt-5 text-xl font-semibold tracking-tight">
+      <h2 className="auth-card-title">
         {mode === "signin" ? t("auth.signIn") : t("auth.createAccount")}
-      </h1>
+      </h2>
       <p className="mt-1 text-sm text-[var(--text-muted)]">
         {mode === "signin" ? t("auth.signInHint") : t("auth.registerHint")}
       </p>
@@ -352,6 +393,7 @@ export function SignInForm() {
               </span>
               <input
                 type="tel"
+                aria-label={t("auth.phoneNumber")}
                 inputMode="numeric"
                 autoComplete="tel-national"
                 placeholder="xxxxxxxx"
@@ -365,8 +407,10 @@ export function SignInForm() {
           </label>
           <label className="block text-xs text-[var(--text-dim)]">
             {t("auth.password")}
+            <span className="auth-password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
+              aria-label={t("auth.password")}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -374,12 +418,16 @@ export function SignInForm() {
               minLength={8}
               required
             />
+            <button type="button" className="auth-password-toggle focus-ring" aria-label={t(showPassword ? "auth.hidePassword" : "auth.showPassword")} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" strokeWidth="1.5" /><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />{showPassword ? <path d="m3 3 18 18" stroke="currentColor" strokeWidth="1.5" /> : null}</svg>
+            </button>
+            </span>
           </label>
           {mode === "register" ? (
             <label className="block text-xs text-[var(--text-dim)]">
               {t("auth.confirmPassword")}
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

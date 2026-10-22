@@ -7,7 +7,7 @@ export function SignInChrome({
   variant,
   errorCode,
 }: {
-  variant: "landingLink" | "banner" | "intro" | "loading";
+  variant: "landingLink" | "banner" | "intro" | "subtitle" | "eyebrow" | "footnote" | "benefitHuman" | "benefitHumanBody" | "benefitRecord" | "benefitRecordBody" | "loading";
   errorCode?: string | null;
 }) {
   const t = useT();
@@ -27,14 +27,21 @@ export function SignInChrome({
     return <div className="text-sm text-[var(--text-dim)]">{t("auth.loading")}</div>;
   }
 
+  if (variant === "benefitHuman") return <>{t("auth.benefitHuman")}</>;
+  if (variant === "benefitHumanBody") return <>{t("auth.benefitHumanBody")}</>;
+  if (variant === "benefitRecord") return <>{t("auth.benefitRecord")}</>;
+  if (variant === "benefitRecordBody") return <>{t("auth.benefitRecordBody")}</>;
+  if (variant === "subtitle") return <>{t("auth.pageIntro")}</>;
+  if (variant === "eyebrow") return <>{t("hero.eyebrow")}</>;
+  if (variant === "footnote") return <>{t("footer.disclaimer")}</>;
+
   if (variant === "banner") {
     if (!errorCode) return null;
-    const banner =
-      errorCode === "config"
-        ? "Auth is not configured. Add Supabase env keys first."
-        : errorCode === "auth"
-          ? "Sign-in failed. Check your phone number and password, then try again."
-          : null;
+    const banner = errorCode === "config"
+      ? t("auth.authNotConfigured")
+      : errorCode === "auth"
+        ? t("auth.signinFailed")
+        : null;
     if (!banner) return null;
     return (
       <p className="max-w-md text-center text-xs text-[var(--negative)]" role="alert">
@@ -43,9 +50,5 @@ export function SignInChrome({
     );
   }
 
-  return (
-    <p className="max-w-md text-center text-xs text-[var(--text-dim)]">
-      {t("auth.pageIntro")}
-    </p>
-  );
+  return <>{t("auth.loginTitle")}</>;
 }
