@@ -4,10 +4,12 @@ export function ClubLogo({
   name,
   logoUrl,
   size = 40,
+  loading = "lazy",
 }: {
   name: string;
   logoUrl?: string | null;
   size?: number;
+  loading?: "eager" | "lazy";
 }) {
   if (!logoUrl) {
     return (
@@ -32,6 +34,7 @@ export function ClubLogo({
         width={size}
         height={size}
         className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]"
+        loading={loading}
         unoptimized
       />
     </span>
