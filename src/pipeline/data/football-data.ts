@@ -13,6 +13,9 @@ export const LEAGUES = {
   I1: { name: "Serie A", country: "Italy", apiFootballId: 135 },
   D1: { name: "Bundesliga", country: "Germany", apiFootballId: 78 },
   F1: { name: "Ligue 1", country: "France", apiFootballId: 61 },
+  P1: { name: "Primeira Liga", country: "Portugal", apiFootballId: 94 },
+  N1: { name: "Eredivisie", country: "Netherlands", apiFootballId: 88 },
+  B1: { name: "Belgian Pro League", country: "Belgium", apiFootballId: 144 },
 } as const;
 
 export type LeagueCode = keyof typeof LEAGUES;
