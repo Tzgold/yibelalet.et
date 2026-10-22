@@ -3,20 +3,20 @@
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/domain/types";
 import { Avatar } from "@/components/ui/Avatar";
-import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
 import { formatPercent } from "@/lib/format";
 import { useT } from "@/i18n/I18nProvider";
 
-export function AiModelsPageClient({ entries }: { entries: LeaderboardEntry[] }) {
+export function AiModelsPageClient({ entries, isAuthenticated = false }: { entries: LeaderboardEntry[]; isAuthenticated?: boolean }) {
   const t = useT();
 
   return (
-    <div>
-      <header className="mb-8">
-        <LinedSectionTitle as="h1">{t("aiModelsPage.title")}</LinedSectionTitle>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-[var(--text-muted)] sm:text-base">
+    <div className="workspace-models">
+      <header className="workspace-page-header mb-8">
+        <p className="company-eyebrow">YIBELALET / {t("nav.aiModels")}</p>
+        <h1>{t("aiModelsPage.title")}</h1>
+        <p className="workspace-page-intro">
           {t("aiModelsPage.subtitle")}
         </p>
       </header>
@@ -31,7 +31,7 @@ export function AiModelsPageClient({ entries }: { entries: LeaderboardEntry[] })
             {entries.slice(0, 6).map((e) => (
               <li key={e.profile.id}>
                 <Link
-                  href={profileAccessHref(e.profile.slug, false)}
+                  href={profileAccessHref(e.profile.slug, isAuthenticated)}
                   className="focus-ring flex h-full items-center gap-3 rounded-xl border border-[var(--border)] bg-black p-4 hover:border-[var(--accent)]"
                 >
                   <Avatar name={e.profile.displayName} url={e.profile.avatarUrl} size="sm" />
@@ -74,7 +74,7 @@ export function AiModelsPageClient({ entries }: { entries: LeaderboardEntry[] })
                     className="border-b border-[var(--border)] last:border-0 hover:bg-white/[0.03]"
                   >
                     <td className="px-5 py-3.5 font-mono text-xs text-[var(--text-dim)]">
-                      {e.rank}
+                      {e.eligible ? e.rank : "—"}
                     </td>
                     <td className="px-3 py-3.5">
                       <div className="flex items-center gap-2.5">
@@ -101,7 +101,7 @@ export function AiModelsPageClient({ entries }: { entries: LeaderboardEntry[] })
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <Link
-                        href={profileAccessHref(e.profile.slug, false)}
+                        href={profileAccessHref(e.profile.slug, isAuthenticated)}
                         className="text-xs font-medium text-[var(--accent)] hover:underline"
                       >
                         {t("common.viewProfile")}
@@ -115,7 +115,7 @@ export function AiModelsPageClient({ entries }: { entries: LeaderboardEntry[] })
               {entries.map((e) => (
                 <li key={e.profile.id}>
                   <Link
-                    href={profileAccessHref(e.profile.slug, false)}
+                    href={profileAccessHref(e.profile.slug, isAuthenticated)}
                     className="flex items-center gap-3 px-4 py-3.5"
                   >
                     <Avatar name={e.profile.displayName} url={e.profile.avatarUrl} size="sm" />

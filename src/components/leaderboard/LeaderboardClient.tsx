@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import type { Competition, LeaderboardEntry, RankingMetric, TimeRangeKey } from "@/domain/types";
 import { formatPercent, formatUnits } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
-import { LinedSectionTitle } from "@/components/ui/LinedSectionTitle";
 import { TypeBadge } from "@/components/ui/TypeBadge";
 import { profileAccessHref } from "@/lib/auth-paths";
 import { useT } from "@/i18n/I18nProvider";
@@ -74,19 +73,20 @@ export function LeaderboardClient({
   }, [initialEntries, search, profileType]);
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-3">
-        <LinedSectionTitle as="h1">{t("leaderboardPage.title")}</LinedSectionTitle>
-        <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
+    <div className="workspace-board space-y-6">
+      <header className="workspace-page-header">
+        <p className="company-eyebrow">YIBELALET / {t("nav.rankings")}</p>
+        <h1>{t("leaderboardPage.title")}</h1>
+        <p className="workspace-page-intro">
           {t("leaderboardPage.subtitle")}
         </p>
-        <p className="text-center text-sm text-[var(--text-dim)]">
+        <p className="workspace-result-count" aria-live="polite">
           {t("leaderboardPage.publicProfiles", { count: profileCount })}
         </p>
       </header>
 
       <form
-        className="grid gap-3 rounded-xl border border-[var(--border)] bg-black p-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="workspace-filters grid gap-3 rounded-xl border border-[var(--border)] bg-black p-4 sm:grid-cols-2 lg:grid-cols-5"
         method="get"
         action="/leaderboard"
       >
@@ -167,6 +167,7 @@ export function LeaderboardClient({
             {t("common.applyFilters")}
           </button>
         </div>
+        <Link href="/leaderboard" className="workspace-reset focus-ring">{t("common.clearFilters")}</Link>
       </form>
 
       {visible.length === 0 ? (
@@ -178,8 +179,9 @@ export function LeaderboardClient({
         </div>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border border-[var(--border)] bg-black md:block">
+          <div className="workspace-table-region hidden rounded-xl border border-[var(--border)] bg-black lg:block" role="region" aria-label={t("leaderboardPage.title")} tabIndex={0}>
             <table className="min-w-full text-left text-sm">
+              <caption className="sr-only">{t("leaderboardPage.title")}</caption>
               <thead className="text-xs uppercase tracking-wide text-[var(--text-dim)]">
                 <tr className="border-b border-[var(--border)]">
                   <th className="px-4 py-3 font-medium">{t("common.rank")}</th>
@@ -189,7 +191,7 @@ export function LeaderboardClient({
                   <th className="px-4 py-3 font-medium">{t("common.accuracy")}</th>
                   <th className="px-4 py-3 font-medium">{t("common.roi")}</th>
                   <th className="px-4 py-3 font-medium">{t("common.form")}</th>
-                  <th className="px-4 py-3 font-medium" />
+                  <th className="px-4 py-3 font-medium"><span className="sr-only">{t("common.viewProfile")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -199,7 +201,7 @@ export function LeaderboardClient({
                     className="border-t border-[var(--border)] hover:bg-white/[0.03]"
                   >
                     <td className="px-4 py-3 font-mono text-[var(--text-muted)]">
-                      #{entry.rank}
+                      {entry.eligible ? `#${entry.rank}` : "—"}
                       {!entry.eligible ? (
                         <span className="ml-2 text-[10px] uppercase text-[var(--text-dim)]">
                           {t("common.na")}
@@ -266,7 +268,7 @@ export function LeaderboardClient({
             </table>
           </div>
 
-          <ul className="space-y-3 md:hidden">
+          <ul className="workspace-mobile-board space-y-3 lg:hidden">
             {visible.map((entry) => (
               <li key={entry.profile.id}>
                 <Link
@@ -275,7 +277,7 @@ export function LeaderboardClient({
                 >
                   <div className="flex items-start gap-3">
                     <span className="font-mono text-sm text-[var(--text-dim)]">
-                      #{entry.rank}
+                      {entry.eligible ? `#${entry.rank}` : "—"}
                     </span>
                     <Avatar name={entry.profile.displayName} url={entry.profile.avatarUrl} />
                     <div className="min-w-0 flex-1">
@@ -286,7 +288,7 @@ export function LeaderboardClient({
                       <p className="mt-1 text-xs text-[var(--text-dim)]">
                         {entry.profile.specialties.slice(0, 2).join(" · ")}
                       </p>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div className="workspace-mobile-metrics mt-3 grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <p className="text-[var(--text-dim)]">{t("common.record")}</p>
                           <p className="tabular-nums">
@@ -307,6 +309,7 @@ export function LeaderboardClient({
                               : "—"}
                           </p>
                         </div>
+                        <div><p className="text-[var(--text-dim)]">{t("aiModelsPage.settledCol")}</p><p className="tabular-nums">{entry.summary.settledCount}</p></div>
                       </div>
                       <div className="mt-2">
                         <FormPills form={entry.recentForm} emptyLabel={t("leaderboardPage.noRecent")} formLabel={t("leaderboardPage.recentForm", { form: entry.recentForm.join(" ") })} />
