@@ -21,6 +21,7 @@ export interface UpcomingMatchCard {
   homeTeam: Team;
   awayTeam: Team;
   isDemo: boolean;
+  predictionProfiles?: Array<{slug: string; displayName: string}>;
 }
 
 export interface RecentSettledTip {
@@ -83,7 +84,7 @@ export interface PredictorRepository {
     byCompetition: BreakdownRow[];
     byMarket: BreakdownRow[];
   }>;
-  getUpcomingMatches(limit?: number): Promise<UpcomingMatchCard[]>;
+  getUpcomingMatches(limit?: number, fromDay?: string, days?: number): Promise<UpcomingMatchCard[]>;
   getSampleOpenTip(): Promise<PredictionView | null>;
   /** Fixed showcase fixture for landing hero (Arsenal vs Chelsea when available). */
   getShowcaseMatch(): Promise<UpcomingMatchCard | null>;

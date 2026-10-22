@@ -115,6 +115,8 @@ export interface BettingRecord {
 }
 
 export interface PredictionView extends Prediction {
+  /** Set only on a server-redacted view; private fields have already been removed. */
+  accessLocked?: boolean;
   match: FootballMatch;
   competition: Competition;
   homeTeam: Team;
