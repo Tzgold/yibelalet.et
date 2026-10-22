@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
+import { connection } from "next/server";
 import {
   MOCK_AUTH_COOKIE,
   decodeMockSession,
@@ -8,7 +10,8 @@ import {
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function getSessionUser() {
+export const getSessionUser = cache(async function getSessionUser() {
+  await connection();
   if (isAuthMockEnabled()) {
     const cookieStore = await cookies();
     const mock = decodeMockSession(cookieStore.get(MOCK_AUTH_COOKIE)?.value);
@@ -26,7 +29,7 @@ export async function getSessionUser() {
 
   if (!hasSupabaseEnv()) return null;
   return getSupabaseUser();
-}
+});
 
 async function getSupabaseUser() {
   try {

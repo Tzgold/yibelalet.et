@@ -1,4 +1,4 @@
-/** Edge-safe mock auth helpers (no Node fs/crypto). Used by middleware. */
+/** Development-only mock auth helpers (no Node fs/crypto). Used by proxy. */
 
 export const MOCK_OTP = "123456";
 export const MOCK_AUTH_COOKIE = "yibelalet_mock_auth";
@@ -11,8 +11,9 @@ export type MockSession = {
 
 export function isAuthMockEnabled() {
   return (
-    process.env.AUTH_MOCK === "true" ||
-    process.env.NEXT_PUBLIC_AUTH_MOCK === "true"
+    process.env.NODE_ENV === "development" &&
+    (process.env.AUTH_MOCK === "true" ||
+      process.env.NEXT_PUBLIC_AUTH_MOCK === "true")
   );
 }
 
