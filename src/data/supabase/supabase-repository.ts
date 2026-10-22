@@ -18,7 +18,7 @@ import type {
   Team,
   TimeRangeKey,
 } from "@/domain/types";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import type {
   HistoryQuery,
   LeaderboardQuery,
@@ -35,6 +35,9 @@ import {
   mapProfile,
   mapTeam,
 } from "./mappers";
+import { cache } from "react";
+import { liveRecords } from "../live-records";
+import { withinMatchDays, matchDay } from "@/lib/matchday";
 
 interface WorldCache {
   profiles: PredictorProfile[];
@@ -45,8 +48,9 @@ interface WorldCache {
   bettingRecords: BettingRecord[];
 }
 
-async function loadWorld(): Promise<WorldCache> {
-  const supabase = await createSupabaseServerClient();
+const loadWorld = cache(async function loadWorld(): Promise<WorldCache> {
+  // Server-only aggregate reads; subscription redaction happens before client props.
+  const supabase = createSupabaseAdminClient();
 
   async function loadTable(table: string) {
     const rows: Record<string, unknown>[] = [];
@@ -81,15 +85,20 @@ async function loadWorld(): Promise<WorldCache> {
     throw new Error(`Supabase load failed: ${firstError.message}`);
   }
 
+  const records = liveRecords(
+    (matchesRes.data ?? []).map((r) => mapMatch(r as Record<string, unknown>)),
+    (predsRes.data ?? []).map((r) => mapPrediction(r as Record<string, unknown>)),
+    (betsRes.data ?? []).map((r) => mapBetting(r as Record<string, unknown>)),
+  );
+  const competitionIds = new Set(records.matches.map(m=>m.competitionId));
+  const teamIds = new Set(records.matches.flatMap(m=>[m.homeTeamId,m.awayTeamId]));
   return {
     profiles: (profilesRes.data ?? []).map((r) => mapProfile(r as Record<string, unknown>)),
-    competitions: (compsRes.data ?? []).map((r) => mapCompetition(r as Record<string, unknown>)),
-    teams: (teamsRes.data ?? []).map((r) => mapTeam(r as Record<string, unknown>)),
-    matches: (matchesRes.data ?? []).map((r) => mapMatch(r as Record<string, unknown>)),
-    predictions: (predsRes.data ?? []).map((r) => mapPrediction(r as Record<string, unknown>)),
-    bettingRecords: (betsRes.data ?? []).map((r) => mapBetting(r as Record<string, unknown>)),
+    competitions: (compsRes.data ?? []).map((r) => mapCompetition(r as Record<string, unknown>)).filter(c=>competitionIds.has(c.id)),
+    teams: (teamsRes.data ?? []).map((r) => mapTeam(r as Record<string, unknown>)).filter(t=>teamIds.has(t.id)),
+    ...records,
   };
-}
+});
 
 function toView(prediction: Prediction, world: WorldCache): PredictionView | null {
   const match = world.matches.find((m) => m.id === prediction.matchId);
@@ -108,7 +117,7 @@ export class SupabaseRepository implements PredictorRepository {
     return {
       mode: "supabase" as const,
       isDemo: false,
-      label: "Live Supabase data",
+      label: "Live forecast records",
     };
   }
 
@@ -142,7 +151,7 @@ export class SupabaseRepository implements PredictorRepository {
       profileType: query.profileType ?? "all",
       search: query.search,
       competitionId: query.competitionId,
-    });
+    }).map(entry=>({...entry,summary:{...entry.summary,averageProbability:null}}));
   }
 
   async getProfileBySlug(slug: string) {
@@ -184,7 +193,7 @@ export class SupabaseRepository implements PredictorRepository {
         v.status === "live" ||
         v.status === "pending_settlement" ||
         v.status === "postponed",
-    );
+    ).sort((a, b) => a.match.kickoffAt.localeCompare(b.match.kickoffAt));
 
     const similar = world.profiles
       .filter((p) => p.slug !== slug)
@@ -200,7 +209,7 @@ export class SupabaseRepository implements PredictorRepository {
 
     return {
       profile,
-      rank: entry?.rank ?? 0,
+      rank: entry?.eligible ? entry.rank : 0,
       rankingPeriod,
       summary: buildPerformanceSummary(periodPreds, bets),
       openPredictions,
@@ -225,6 +234,7 @@ export class SupabaseRepository implements PredictorRepository {
     }
     if (query.to) {
       const to = new Date(query.to);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(query.to)) to.setUTCHours(23, 59, 59, 999);
       items = items.filter((v) => new Date(v.publishedAt) <= to);
     }
     if (query.competitionId) {
@@ -317,10 +327,10 @@ export class SupabaseRepository implements PredictorRepository {
     };
   }
 
-  async getUpcomingMatches(limit = 12): Promise<UpcomingMatchCard[]> {
+  async getUpcomingMatches(limit = 12, fromDay?: string, days = 2): Promise<UpcomingMatchCard[]> {
     const world = await loadWorld();
     return world.matches
-      .filter((m) => m.matchStatus === "scheduled")
+      .filter((m) => fromDay ? withinMatchDays(m.kickoffAt,fromDay,days) : m.matchStatus === "scheduled" && new Date(m.kickoffAt) > new Date())
       .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))
       .slice(0, limit)
       .map((match) => {
@@ -333,6 +343,9 @@ export class SupabaseRepository implements PredictorRepository {
           homeTeam,
           awayTeam,
           isDemo: match.dataSource === "demo",
+          predictionProfiles: world.profiles
+            .filter(profile => world.predictions.some(p => p.profileId === profile.id && p.matchId === match.id && p.status !== 'void'))
+            .map(profile => ({slug:profile.slug,displayName:profile.displayName})),
         };
       });
   }
@@ -340,8 +353,8 @@ export class SupabaseRepository implements PredictorRepository {
   async getSampleOpenTip() {
     const world = await loadWorld();
     const open = world.predictions
-      .filter((p) => p.status === "upcoming")
-      .sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
+      .filter((p) => p.status === "upcoming" && world.matches.some(m=>m.id===p.matchId && new Date(m.kickoffAt)>new Date() && withinMatchDays(m.kickoffAt,matchDay(new Date()),2)))
+      .sort((a, b) => (world.matches.find(m=>m.id===a.matchId)?.kickoffAt??'').localeCompare(world.matches.find(m=>m.id===b.matchId)?.kickoffAt??'') || b.publishedAt.localeCompare(a.publishedAt));
     for (const p of open) {
       const view = toView(p, world);
       if (view) return view;
