@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/i18n/I18nProvider";
 
@@ -16,24 +16,39 @@ export function FollowSubscribeBar({
   initialStatus,
   subscribePriceEtb,
   subscribeDays = 30,
+  hasBettingRecords = true,
+  checkoutPreview = false,
 }: {
   slug: string;
   displayName: string;
   initialStatus: Status;
   subscribePriceEtb: number;
   subscribeDays?: number;
+  hasBettingRecords?: boolean;
+  checkoutPreview?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
-  const [status, setStatus] = useState(initialStatus);
+  const [statusOverride, setStatusOverride] = useState<{ base: Status; value: Status } | null>(null);
+  const status = statusOverride?.base === initialStatus ? statusOverride.value : initialStatus;
   const [bump, setBump] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setStatus(initialStatus);
-  }, [initialStatus]);
+    if (!confirmOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    cancelRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [confirmOpen]);
 
   async function onFollow() {
     setError(null);
@@ -42,17 +57,17 @@ export function FollowSubscribeBar({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug }),
-      });
+      }).catch(() => null);
+      if (!res) {
+        setError(t("social.networkError"));
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as Status & { error?: string };
       if (!res.ok) {
         setError(data.error ?? "Could not update follow");
         return;
       }
-      setStatus((prev) => ({
-        ...prev,
-        following: data.following,
-        followerCount: data.followerCount,
-      }));
+      setStatusOverride({ base: initialStatus, value: { ...status, following: data.following, followerCount: data.followerCount } });
       setBump(true);
       window.setTimeout(() => setBump(false), 350);
       router.refresh();
@@ -66,7 +81,11 @@ export function FollowSubscribeBar({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug }),
-      });
+      }).catch(() => null);
+      if (!res) {
+        setError(t("social.networkError"));
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         checkoutUrl?: string;
@@ -130,7 +149,7 @@ export function FollowSubscribeBar({
             onClick={() => setConfirmOpen(true)}
             className="focus-ring rounded-full border border-[var(--accent)] bg-black px-5 py-2.5 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent-soft)] active:scale-[0.97] disabled:opacity-60"
           >
-            {t("social.subscribe", { price: subscribePriceEtb })}
+            {checkoutPreview ? t('social.testSubscribe') : t("social.subscribe", { price: subscribePriceEtb })}
           </button>
         )}
       </div>
@@ -140,6 +159,7 @@ export function FollowSubscribeBar({
           ? t("social.subscribedHint", { name: displayName })
           : t("social.followHint", { name: displayName })}
       </p>
+      {hasBettingRecords ? null : <p className="text-xs text-[var(--text-dim)]">{t("social.noBettingYet")}</p>}
       {error ? (
         <p className="text-xs text-[var(--negative)]" role="alert">
           {error}
@@ -149,29 +169,43 @@ export function FollowSubscribeBar({
       {confirmOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="chapa-subscribe-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !pending) {
+                event.preventDefault();
+                setConfirmOpen(false);
+              }
+              if (event.key !== "Tab") return;
+              const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+              if (!buttons?.length) { event.preventDefault(); return; }
+              const first = buttons[0];
+              const last = buttons[buttons.length - 1];
+              if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+              else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+            }}
             className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[#0a0a0a] p-5 shadow-2xl"
           >
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-              {t("social.chapaCheckout")}
+              {t(checkoutPreview ? 'social.previewCheckout' : "social.chapaCheckout")}
             </p>
             <h3 id="chapa-subscribe-title" className="mt-2 text-xl font-semibold">
               {t("social.unlockTips")}
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">
-              {t("social.payFor", {
+              {t(checkoutPreview ? 'social.previewHint' : "social.payFor", {
                 price: subscribePriceEtb,
                 days: subscribeDays,
                 name: displayName,
               })}
             </p>
-            <ol className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
+            {checkoutPreview ? null : <ol className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
               <li>{t("social.step1")}</li>
               <li>{t("social.step2")}</li>
               <li>{t("social.step3")}</li>
-            </ol>
+            </ol>}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
               <button
                 type="button"
@@ -179,9 +213,10 @@ export function FollowSubscribeBar({
                 onClick={startChapaCheckout}
                 className="focus-ring flex-1 rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-60"
               >
-                {pending ? t("social.openingChapa") : t("social.continueChapa")}
+                {pending ? t("social.openingChapa") : t(checkoutPreview ? 'social.activateTest' : "social.continueChapa")}
               </button>
               <button
+                ref={cancelRef}
                 type="button"
                 disabled={pending}
                 onClick={() => setConfirmOpen(false)}

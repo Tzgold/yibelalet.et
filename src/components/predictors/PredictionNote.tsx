@@ -2,6 +2,7 @@
 
 import type { Prediction } from "@/domain/types";
 import { useI18n } from "@/i18n/I18nProvider";
+import { predictionCopy } from "@/lib/prediction-copy";
 
 export function PredictionNote({ prediction }: { prediction: Pick<Prediction, "note" | "sourceMetadata"> }) {
   const { locale } = useI18n();
@@ -14,5 +15,5 @@ export function PredictionNote({ prediction }: { prediction: Pick<Prediction, "n
       }
     } catch { /* Older/manual tips may have plain-text source metadata. */ }
   }
-  return <>{note}</>;
+  return <>{predictionCopy(note)}</>;
 }

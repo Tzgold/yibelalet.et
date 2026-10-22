@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Area,
@@ -36,6 +36,9 @@ import { TypeBadge } from "@/components/ui/TypeBadge";
 import { FollowSubscribeBar } from "@/components/predictors/FollowSubscribeBar";
 import { useT } from "@/i18n/I18nProvider";
 import { PredictionNote } from "./PredictionNote";
+import { PredictionEvidence } from "./PredictionEvidence";
+import { matchDay, shiftMatchDay } from "@/lib/matchday";
+import { predictionCopy } from "@/lib/prediction-copy";
 
 export function ProfileClient({
   profile,
@@ -43,6 +46,7 @@ export function ProfileClient({
   rankingPeriod,
   summary,
   openPredictions,
+  today,
   similar,
   historyItems,
   historyTotal,
@@ -63,6 +67,7 @@ export function ProfileClient({
   socialStatus,
   subscribePriceEtb,
   subscribeDays = 30,
+  checkoutPreview = false,
   justSubscribed = false,
   subscribeError = null,
 }: {
@@ -71,6 +76,7 @@ export function ProfileClient({
   rankingPeriod: TimeRangeKey;
   summary: PerformanceSummary;
   openPredictions: PredictionView[];
+  today: string;
   similar: PredictorProfile[];
   historyItems: PredictionView[];
   historyTotal: number;
@@ -95,11 +101,13 @@ export function ProfileClient({
   };
   subscribePriceEtb: number;
   subscribeDays?: number;
+  checkoutPreview?: boolean;
   justSubscribed?: boolean;
   subscribeError?: string | null;
 }) {
   const t = useT();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const weekdayLabels = [
     t("profile.mon"),
     t("profile.tue"),
@@ -120,6 +128,15 @@ export function ProfileClient({
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const bettingUnlocked = socialStatus.subscribed;
+  const tomorrow = shiftMatchDay(today, 1);
+  const requestedDay = searchParams.get('matchday');
+  const initialFixtureDay = requestedDay === tomorrow || requestedDay === 'all' ? requestedDay : today;
+  const fixtureSource = `${profile.slug}:${initialFixtureDay}`;
+  const [fixtureFilter, setFixtureFilter] = useState<{source:string;day:string}|null>(null);
+  const fixtureDay = fixtureFilter?.source === fixtureSource ? fixtureFilter.day : initialFixtureDay;
+  const setFixtureDay = (day:string) => setFixtureFilter({source:fixtureSource,day});
+  const visibleOpenPredictions = fixtureDay === 'all' ? openPredictions : openPredictions.filter(p=>matchDay(p.match.kickoffAt)===fixtureDay);
+  const hasBettingRecords = summary.hasBettingRecords || openPredictions.some(p=>p.betting) || historyItems.some(p=>p.betting);
 
   const dayMap = useMemo(() => {
     const map = new Map<string, CalendarDaySummary>();
@@ -148,7 +165,7 @@ export function ProfileClient({
 
   useEffect(() => {
     if (selectedDay && dayPanelRef.current) {
-      dayPanelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      dayPanelRef.current.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "nearest" });
     }
   }, [selectedDay]);
 
@@ -191,7 +208,7 @@ export function ProfileClient({
     const params = new URLSearchParams(window.location.search);
     params.set("chart", range);
     startTransition(() => {
-      router.push(`/predictors/${profile.slug}?${params.toString()}`);
+      router.push(`/predictors/${profile.slug}?${params.toString()}`, { scroll: false });
     });
   }
 
@@ -199,15 +216,16 @@ export function ProfileClient({
     const params = new URLSearchParams(window.location.search);
     params.set("page", String(page));
     startTransition(() => {
-      router.push(`/predictors/${profile.slug}?${params.toString()}`);
+      router.push(`/predictors/${profile.slug}?${params.toString()}`, { scroll: false });
     });
   }
 
   const calendarCells = buildMonthCells(calendarMonth);
 
   return (
-    <div className="space-y-8">
-      <section className="surface rounded-xl p-5 sm:p-6">
+    <div className="profile-workspace space-y-8" aria-busy={pending}>
+      <nav className="profile-section-nav" aria-label={t("profile.navigation")}><a href="#profile-overview">{t("profile.overview")}</a><a href="#profile-open">{t("profile.openPredictions")}</a><a href="#profile-history">{t("profile.historical")}</a><a href="#profile-performance">{t("profile.performance")}</a></nav>
+      <section id="profile-overview" className="profile-identity surface rounded-xl p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <Avatar name={profile.displayName} url={profile.avatarUrl} size="lg" />
           <div className="min-w-0 flex-1 space-y-3">
@@ -217,19 +235,19 @@ export function ProfileClient({
               </h1>
               <TypeBadge type={profile.profileType} />
               <span className="rounded-md border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--text-muted)]">
-                {t("profile.rankHash", { rank: rank || "—" })} · {rankingPeriod}
+                {rank ? t("profile.rankHash", { rank }) : t("profile.buildingRecord")} · {rankingPeriod}
               </span>
             </div>
             <p className="text-sm text-[var(--text-dim)]">{profile.handle}</p>
             <p className="max-w-3xl text-sm leading-relaxed text-[var(--text-muted)]">
-              {profile.bio}
+              {predictionCopy(profile.bio)}
             </p>
             <div className="flex flex-wrap gap-2 text-xs text-[var(--text-dim)]">
               <span>{t("profile.joined", { date: profile.joinDate })}</span>
               {profile.profileType === "ai" && profile.modelType ? (
                 <span>
                   {t("profile.modelLabel")} {profile.modelType}
-                  {profile.modelVersion ? ` · v${profile.modelVersion}` : ""}
+                  {profile.modelVersion ? ` · ${profile.modelVersion}` : ""}
                 </span>
               ) : null}
               {profile.specialties.map((s) => (
@@ -245,13 +263,15 @@ export function ProfileClient({
               slug={profile.slug}
               displayName={profile.displayName}
               initialStatus={socialStatus}
+              hasBettingRecords={hasBettingRecords}
               subscribePriceEtb={subscribePriceEtb}
               subscribeDays={subscribeDays}
+          checkoutPreview={checkoutPreview}
             />
 
             {justSubscribed ? (
               <p className="text-xs text-[var(--positive)]" role="status">
-                {t("profile.paymentVerified")}
+                {t(checkoutPreview ? 'profile.testSubscriptionActive' : "profile.paymentVerified")}
               </p>
             ) : null}
             {subscribeError ? (
@@ -278,12 +298,32 @@ export function ProfileClient({
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="profile-metrics grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Metric
+          label={t("common.accuracy")}
+          tip={t("profile.accuracyTip")}
+          value={formatPercent(summary.accuracy)}
+        />
+        <Metric
+          label={t("profile.settledPredictions")}
+          tip={t("profile.settledTip")}
+          value={String(summary.settledCount)}
+        />
+        <Metric
+          label={t("profile.winLossVoid")}
+          tip={t("profile.winLossVoidTip")}
+          value={`${summary.wins}-${summary.losses}-${summary.voids}`}
+        />
+        <Metric
+          label={t("profile.openPredictions")}
+          tip={t("profile.openTip")}
+          value={String(openPredictions.length)}
+        />
         <Metric
           label={t("profile.netProfit")}
           tip={t("profile.netProfitTip")}
           value={
-            !bettingUnlocked ? (
+            !summary.hasBettingRecords ? <span className="text-[var(--text-dim)]">{t("profile.noBetting")}</span> : !bettingUnlocked ? (
               <span className="text-[var(--text-dim)]">{t("profile.subscribeUnlock")}</span>
             ) : summary.netProfitUnits != null ? (
               <span className={summary.netProfitUnits >= 0 ? "pos" : "neg"}>
@@ -298,7 +338,7 @@ export function ProfileClient({
           label={t("common.roi")}
           tip={t("profile.roiTip")}
           value={
-            !bettingUnlocked ? (
+            !summary.hasBettingRecords ? <span className="text-[var(--text-dim)]">—</span> : !bettingUnlocked ? (
               <span className="text-[var(--text-dim)]">{t("common.locked")}</span>
             ) : summary.roi != null ? (
               <span className={summary.roi >= 0 ? "pos" : "neg"}>
@@ -307,32 +347,6 @@ export function ProfileClient({
             ) : (
               <span className="text-[var(--text-dim)]">—</span>
             )
-          }
-        />
-        <Metric
-          label={t("profile.winLossVoid")}
-          tip={t("profile.winLossVoidTip")}
-          value={`${summary.wins}-${summary.losses}-${summary.voids}`}
-        />
-        <Metric
-          label={t("profile.settledPredictions")}
-          tip={t("profile.settledTip")}
-          value={String(summary.settledCount)}
-        />
-        <Metric
-          label={t("common.accuracy")}
-          tip={t("profile.accuracyTip")}
-          value={formatPercent(summary.accuracy)}
-        />
-        <Metric
-          label={t("profile.avgProbBrier")}
-          tip={t("profile.avgProbTip")}
-          value={
-            <>
-              {formatPercent(summary.averageProbability)}
-              <span className="mx-1 text-[var(--text-dim)]">/</span>
-              {summary.brierScore != null ? summary.brierScore.toFixed(3) : "—"}
-            </>
           }
         />
       </section>
@@ -346,7 +360,7 @@ export function ProfileClient({
       <section className="surface rounded-xl p-5">
         <h2 className="text-lg font-semibold">{t("profile.aboutMethod")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-[var(--text-muted)]">
-          {profile.methodology || t("profile.noMethod")}
+          {predictionCopy(profile.methodology) || t("profile.noMethod")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {profile.competitions.map((id) => {
@@ -363,18 +377,21 @@ export function ProfileClient({
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section id="profile-open" className="space-y-3">
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-lg font-semibold">{t("profile.openPredictions")}</h2>
           <p className="text-xs text-[var(--text-dim)]">{t("profile.lockedAtKickoff")}</p>
         </div>
-        {openPredictions.length === 0 ? (
+        <div className="matchday-toolbar"><div className="matchday-tabs" role="group" aria-label={t("matchday.chooseDay")}>
+          {[{day:today,label:t('matchday.today')},{day:tomorrow,label:t('matchday.tomorrow')},{day:'all',label:t('matchday.allOpen')}].map(({day,label})=><button key={day} type="button" aria-pressed={fixtureDay===day} onClick={()=>setFixtureDay(day)}>{label}<span>{day==='all'?openPredictions.length:openPredictions.filter(p=>matchDay(p.match.kickoffAt)===day).length}</span></button>)}
+        </div><p>{t('matchday.timezone')}</p></div>
+        {visibleOpenPredictions.length === 0 ? (
           <div className="surface rounded-xl p-6 text-sm text-[var(--text-muted)]">
-            {t("profile.noOpen")}
+            {t("matchday.noProfilePicks")} <Link href="/matches" className="text-[var(--accent)]">{t('nav.matches')} ↗</Link>
           </div>
         ) : (
           <ul className="grid gap-3 lg:grid-cols-2">
-            {openPredictions.map((p) => (
+            {visibleOpenPredictions.map((p) => (
               <li key={p.id} className="surface rounded-xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -390,7 +407,7 @@ export function ProfileClient({
                   </div>
                   <StatusPill status={p.status} />
                 </div>
-                <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                {p.accessLocked ? <LockedForecast /> : <><dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <dt className="text-xs text-[var(--text-dim)]">{t("profile.market")}</dt>
                     <dd>{marketLabel(p.marketType)}</dd>
@@ -402,13 +419,9 @@ export function ProfileClient({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-[var(--text-dim)]">{t("profile.probability")}</dt>
-                    <dd>{formatPercent(p.probability)}</dd>
-                  </div>
-                  <div>
                     <dt className="text-xs text-[var(--text-dim)]">{t("profile.oddsStake")}</dt>
                     <dd>
-                      {bettingUnlocked
+                      {!p.betting ? t("profile.noVerifiedPrice") : bettingUnlocked
                         ? p.betting?.oddsAtPublication != null
                           ? `${p.betting.oddsAtPublication.toFixed(2)} · ${p.betting.stakeUnits}u`
                           : "—"
@@ -421,13 +434,15 @@ export function ProfileClient({
                     <PredictionNote prediction={p} />
                   </p>
                 ) : null}
+                <PredictionEvidence prediction={p} />
+                </>}
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="space-y-4">
+      <section id="profile-history" className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">{t("profile.historical")}</h2>
           <div className="inline-flex rounded-md border border-[var(--border)] p-0.5">
@@ -435,6 +450,7 @@ export function ProfileClient({
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "tips" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("tips")}
+              aria-pressed={historyView === "tips"}
             >
               {t("profile.tips")}
             </button>
@@ -442,6 +458,7 @@ export function ProfileClient({
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "calendar" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("calendar")}
+              aria-pressed={historyView === "calendar"}
             >
               {t("profile.calendar")}
             </button>
@@ -449,6 +466,7 @@ export function ProfileClient({
               type="button"
               className={`focus-ring rounded px-3 py-1.5 text-xs ${historyView === "table" ? "bg-[var(--bg-soft)] text-[var(--text)]" : "text-[var(--text-dim)]"}`}
               onClick={() => setHistoryView("table")}
+              aria-pressed={historyView === "table"}
             >
               {t("profile.table")}
             </button>
@@ -456,6 +474,7 @@ export function ProfileClient({
         </div>
 
         <form
+          key={searchParams.toString()}
           method="get"
           className="surface grid gap-3 rounded-xl p-4 sm:grid-cols-2 lg:grid-cols-5"
         >
@@ -466,6 +485,7 @@ export function ProfileClient({
             <input
               type="date"
               name="from"
+              defaultValue={searchParams.get("from") ?? ""}
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
           </label>
@@ -474,6 +494,7 @@ export function ProfileClient({
             <input
               type="date"
               name="to"
+              defaultValue={searchParams.get("to") ?? ""}
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
           </label>
@@ -482,7 +503,7 @@ export function ProfileClient({
             <select
               name="competition"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
-              defaultValue=""
+              defaultValue={searchParams.get("competition") ?? ""}
             >
               <option value="">{t("common.all")}</option>
               {competitions.map((c) => (
@@ -497,7 +518,7 @@ export function ProfileClient({
             <select
               name="market"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
-              defaultValue=""
+              defaultValue={searchParams.get("market") ?? ""}
             >
               <option value="">{t("common.all")}</option>
               <option value="match_result">Match result</option>
@@ -511,7 +532,7 @@ export function ProfileClient({
             <select
               name="result"
               className="focus-ring mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
-              defaultValue="all"
+              defaultValue={searchParams.get("result") ?? "all"}
             >
               <option value="all">{t("common.all")}</option>
               <option value="win">{t("common.win")}</option>
@@ -548,7 +569,7 @@ export function ProfileClient({
                         {row.homeTeam.name} vs {row.awayTeam.name}
                       </h3>
                       <p className="mt-1 text-sm text-[var(--accent)]">
-                        {selectionLabel(row.selection, row.homeTeam.name, row.awayTeam.name)}
+                        {row.accessLocked ? t('profile.subscriberPick') : selectionLabel(row.selection, row.homeTeam.name, row.awayTeam.name)}
                         <span className="mx-2 text-[var(--text-dim)]">·</span>
                         <span className="text-[var(--text-muted)]">
                           {marketLabel(row.marketType)}
@@ -571,9 +592,9 @@ export function ProfileClient({
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--text-dim)]">
-                    <span>Prob {formatPercent(row.probability)}</span>
                     <BettingBits row={row} unlocked={bettingUnlocked} />
                   </div>
+                  <PredictionEvidence prediction={row} />
                 </article>
               ))
             )}
@@ -670,7 +691,7 @@ export function ProfileClient({
                       }}
                     >
                       <span className="text-[var(--text-dim)]">{Number(cell.slice(8))}</span>
-                      {summaryDay ? (
+                      {summaryDay && summaryDay.settledCount > 0 ? (
                         <span className="mt-1 block tabular-nums">
                           {summaryDay.wins}W {summaryDay.losses}L
                         </span>
@@ -725,7 +746,7 @@ export function ProfileClient({
                                 {row.homeTeam.name} vs {row.awayTeam.name}
                               </p>
                               <p className="mt-1 text-sm text-[var(--accent)]">
-                                {selectionLabel(
+                                {row.accessLocked ? t('profile.subscriberPick') : selectionLabel(
                                   row.selection,
                                   row.homeTeam.name,
                                   row.awayTeam.name,
@@ -757,7 +778,6 @@ export function ProfileClient({
                                 time: formatKickoffLocal(row.publishedAt),
                               })}
                             </span>
-                            <span>Prob {formatPercent(row.probability)}</span>
                             <BettingBits row={row} unlocked={bettingUnlocked} />
                           </div>
                         </li>
@@ -769,7 +789,7 @@ export function ProfileClient({
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+          <div className="overflow-x-auto rounded-xl border border-[var(--border)]" role="region" aria-label={t("profile.historical")} tabIndex={0}>
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[var(--bg-soft)] text-xs uppercase text-[var(--text-dim)]">
                 <tr>
@@ -778,7 +798,6 @@ export function ProfileClient({
                   <th className="px-3 py-2">{t("profile.match")}</th>
                   <th className="px-3 py-2">{t("profile.market")}</th>
                   <th className="px-3 py-2">{t("profile.selection")}</th>
-                  <th className="px-3 py-2">{t("profile.probability")}</th>
                   <th className="px-3 py-2">{t("profile.odds")}</th>
                   <th className="px-3 py-2">{t("profile.score")}</th>
                   <th className="px-3 py-2">{t("profile.outcome")}</th>
@@ -788,7 +807,7 @@ export function ProfileClient({
               <tbody>
                 {historyItems.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-3 py-8 text-center text-[var(--text-muted)]">
+                    <td colSpan={9} className="px-3 py-8 text-center text-[var(--text-muted)]">
                       {t("profile.noHistoryFilters")}
                     </td>
                   </tr>
@@ -804,11 +823,10 @@ export function ProfileClient({
                       </td>
                       <td className="px-3 py-2">{marketLabel(row.marketType)}</td>
                       <td className="px-3 py-2">
-                        {selectionLabel(row.selection, row.homeTeam.name, row.awayTeam.name)}
+                        {row.accessLocked ? t('profile.subscriberPick') : selectionLabel(row.selection, row.homeTeam.name, row.awayTeam.name)}
                       </td>
-                      <td className="px-3 py-2">{formatPercent(row.probability)}</td>
                       <td className="px-3 py-2">
-                        {bettingUnlocked
+                        {!row.betting ? "—" : bettingUnlocked
                           ? (row.betting?.oddsAtPublication?.toFixed(2) ?? "—")
                           : "•••"}
                       </td>
@@ -821,7 +839,7 @@ export function ProfileClient({
                         <OutcomeText outcome={row.settlementOutcome} status={row.status} />
                       </td>
                       <td className="px-3 py-2">
-                        {!bettingUnlocked ? (
+                        {!row.betting ? "—" : !bettingUnlocked ? (
                           "•••"
                         ) : row.betting?.netReturnUnits != null ? (
                           <span
@@ -867,7 +885,7 @@ export function ProfileClient({
         )}
       </section>
 
-      <section className="surface rounded-xl p-5">
+      <section id="profile-performance" className="surface rounded-xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
@@ -892,6 +910,7 @@ export function ProfileClient({
                 key={value}
                 type="button"
                 onClick={() => setChart(value)}
+                aria-pressed={chartRange === value}
                 className={`focus-ring rounded-md px-3 py-1.5 text-xs ${
                   chartRange === value
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
@@ -1105,6 +1124,8 @@ function BettingBits({
   unlocked: boolean;
 }) {
   const t = useT();
+  if (row.accessLocked) return <span>{t("profile.subscriberHint")}</span>;
+  if (!row.betting) return <span>{t("profile.predictionOnly")}</span>;
   if (!unlocked) {
     return <span className="text-[var(--accent)]">{t("profile.bettingLocked")}</span>;
   }
@@ -1124,6 +1145,11 @@ function BettingBits({
       )}
     </>
   );
+}
+
+function LockedForecast() {
+  const t=useT();
+  return <div className="subscriber-forecast"><span aria-hidden>◇</span><div><strong>{t('profile.subscriberPick')}</strong><p>{t('profile.subscriberHint')}</p><a className="focus-ring" href="#profile-overview">{t('social.subscribeUnlock')} ↗</a></div></div>;
 }
 
 function buildMonthCells(month: string): Array<string | null> {
