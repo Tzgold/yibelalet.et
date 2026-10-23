@@ -62,7 +62,7 @@ jobs:
           NODE
       - name: Restore completed results
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .data/openfootball
           key: openfootball-${{ github.run_id }}
@@ -75,7 +75,7 @@ jobs:
         run: npx --no-install tsx scripts/run-live-profiles.ts --days 2
       - name: Cache completed results
         if: success() && (github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily')
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .data/openfootball
           key: openfootball-${{ github.run_id }}
