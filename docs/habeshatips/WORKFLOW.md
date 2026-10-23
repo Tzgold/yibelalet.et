@@ -69,7 +69,7 @@ Today + tomorrow in Ethiopian time
   requests include the previous UTC date to avoid missing matches just after
   local midnight. Picks are selected/capped separately for each kickoff day.
 - **History:** CC0 OpenFootball completed domestic results replace the CSV download
-  in the default pipeline. A missing result is never interpreted as 0–0. Coverage
+  in the default pipeline. A missing result is never interpreted as 0Ã¢â‚¬â€œ0. Coverage
   of a fixture does not guarantee enough history on both teams to publish a pick.
   For example, the current Belgian-season history file was unavailable during
   initial verification; available previous-season evidence is used without
@@ -109,9 +109,10 @@ continues to use actual settled outcomes. Published snapshots remain unchanged.
    protected by the new subscriber policy, so billing is not ready to launch.
 2. Configure a real Chapa key and public callback/return URLs, test payment
    verification with a Chapa test account, then disable local mocks for deployment.
-3. Publish the workflow and add GitHub Actions secrets
-   `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Keep the service-role
-   key server-only. No repository secret values are committed by this change.
+3. Publish the workflow and add GitHub Actions repository secrets
+   `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` under **Settings Ã¢â€ â€™
+   Secrets and variables Ã¢â€ â€™ Actions**. These are separate from `.env.local` on your computer. Keep the service-role key server-only. No secret values are committed
+   by this change.
 
 The local checkout preview takes no payment. Telegram/SMS delivery from the
 original repository is documented here but is not installed by this adaptation.

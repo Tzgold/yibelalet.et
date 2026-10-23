@@ -23,14 +23,28 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - name: Check server configuration
-        run: node -e "if(!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Add Supabase URL and service-role key in GitHub Actions secrets')"
+        run: |
+          node <<'NODE'
+          const required = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+          const missing = required.filter((name) => !process.env[name]?.trim());
+          if (missing.length) {
+            console.error(`Missing GitHub Actions secrets: ${missing.join(', ')}`);
+            console.error('Add them under Settings > Secrets and variables > Actions.');
+            process.exit(1);
+          }
+          if (!process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith('https://')) {
+            console.error('NEXT_PUBLIC_SUPABASE_URL must be the https Supabase project URL.');
+            process.exit(1);
+          }
+          console.log('Supabase workflow configuration is present.');
+          NODE
       - name: Restore completed results
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
         uses: actions/cache/restore@v4
