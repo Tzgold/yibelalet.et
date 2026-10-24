@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Barlow_Condensed, IBM_Plex_Mono, Inter, Noto_Sans_Ethiopic } from "next/font/google";
+import localFont from "next/font/local";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { LOCALE_COOKIE, parseLocale } from "@/i18n/config";
 import "./globals.css";
@@ -11,29 +11,39 @@ import "./workspace.css";
 // Locale selection reads the request cookie, including on legal and error pages.
 export const instant = false;
 
-const inter = Inter({
+const inter = localFont({
+  src: "./fonts/inter/Inter-Variable.ttf",
   variable: "--font-body",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
 });
 
-const display = Barlow_Condensed({
+const display = localFont({
+  src: [
+    { path: "./fonts/barlowcondensed/BarlowCondensed-SemiBold.ttf", weight: "600" },
+    { path: "./fonts/barlowcondensed/BarlowCondensed-Bold.ttf", weight: "700" },
+  ],
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["600", "700"],
   display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
+const plexMono = localFont({
+  src: [
+    { path: "./fonts/ibmplexmono/IBMPlexMono-Regular.ttf", weight: "400" },
+    { path: "./fonts/ibmplexmono/IBMPlexMono-Medium.ttf", weight: "500" },
+    { path: "./fonts/ibmplexmono/IBMPlexMono-SemiBold.ttf", weight: "600" },
+  ],
   variable: "--font-plex",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  preload: false,
+  display: "swap",
 });
 
-const notoEthiopic = Noto_Sans_Ethiopic({
+const notoEthiopic = localFont({
+  src: "./fonts/notosansethiopic/NotoSansEthiopic-Variable.ttf",
   variable: "--font-ethiopic",
-  subsets: ["ethiopic"],
-  weight: ["400", "500", "600", "700"],
+  weight: "100 900",
+  preload: false,
+  display: "swap",
 });
 
 export const metadata: Metadata = {
