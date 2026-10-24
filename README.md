@@ -13,6 +13,14 @@ Open [http://localhost:3000/leaderboard](http://localhost:3000/leaderboard).
 
 Without Supabase env vars the app uses a deterministic **demonstration** dataset (25 profiles), clearly labeled in the UI.
 
+## Open the local app on a phone
+
+1. Connect the phone and development computer to the same Wi-Fi network.
+2. Stop any existing dev server with `Ctrl+C`, then run `npm run dev:lan` on the computer.
+3. In PowerShell, run `ipconfig` and find the **IPv4 Address** under the active Wi-Fi adapter. Open `http://<Wi-Fi-IPv4>:3000/` in the phone's browser. For example, if the address is `192.168.1.6`, open `http://192.168.1.6:3000/`.
+
+The phone cannot use `localhost`, because that points back to the phone. Ignore virtual-adapter addresses (for example WSL, Docker or VPN) shown in the Next.js `Network` line if they differ from the active Wi-Fi address. If Windows asks whether to allow Node.js through the firewall, allow access on **Private networks** for this trusted Wi-Fi. Keep the terminal running while using the phone; the Wi-Fi address can change later.
+
 ## Connect Supabase
 
 1. Create a Supabase project.
@@ -48,6 +56,7 @@ history downloads, `npm run pipeline:daily`, and result settlement.
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Local app |
+| `npm run dev:lan` | Local app reachable from another device on the same Wi-Fi |
 | `npm test` | Domain unit tests |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
