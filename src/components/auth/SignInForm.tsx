@@ -57,6 +57,11 @@ export function SignInForm() {
 
   const phone = fullPhone(localDigits);
 
+  function goAfterAuth() {
+    // Full navigation so the mock auth cookie is always sent on the next request.
+    window.location.assign(nextPath);
+  }
+
   function friendlyAuthError(message: string) {
     const key = authErrorKey(message);
     return key ? t(`auth.${key}`) : message;
@@ -110,13 +115,12 @@ export function SignInForm() {
         body: JSON.stringify({ phone, password }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setBusy(false);
       if (!res.ok) {
+        setBusy(false);
         setError(data.error ?? "Sign-in failed.");
         return;
       }
-      router.replace(nextPath);
-      router.refresh();
+      goAfterAuth();
       return;
     }
 
@@ -241,13 +245,13 @@ export function SignInForm() {
         body: JSON.stringify({ phone, otp: otp.trim() }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setBusy(false);
       if (!res.ok) {
+        setBusy(false);
         setError(data.error ?? "Verification failed.");
         return;
       }
-      router.replace(nextPath);
-      router.refresh();
+      // Keep busy=true so double-clicks cannot spam verify after success.
+      goAfterAuth();
       return;
     }
 
