@@ -48,6 +48,25 @@ interface WorldCache {
   bettingRecords: BettingRecord[];
 }
 
+const SUPABASE_LOAD_TIMEOUT_MS = 12_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${ms}ms`)),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const loadWorld = cache(async function loadWorld(): Promise<WorldCache> {
   // Server-only aggregate reads; subscription redaction happens before client props.
   const supabase = createSupabaseAdminClient();
@@ -64,40 +83,54 @@ const loadWorld = cache(async function loadWorld(): Promise<WorldCache> {
     }
   }
 
-  const [profilesRes, compsRes, teamsRes, matchesRes, predsRes, betsRes] =
-    await Promise.all([
-      loadTable("predictor_profiles"),
-      loadTable("competitions"),
-      loadTable("teams"),
-      loadTable("football_matches"),
-      loadTable("predictions"),
-      loadTable("betting_records"),
-    ]);
+  return withTimeout(
+    (async () => {
+      const [profilesRes, compsRes, teamsRes, matchesRes, predsRes, betsRes] =
+        await Promise.all([
+          loadTable("predictor_profiles"),
+          loadTable("competitions"),
+          loadTable("teams"),
+          loadTable("football_matches"),
+          loadTable("predictions"),
+          loadTable("betting_records"),
+        ]);
 
-  const firstError =
-    profilesRes.error ||
-    compsRes.error ||
-    teamsRes.error ||
-    matchesRes.error ||
-    predsRes.error ||
-    betsRes.error;
-  if (firstError) {
-    throw new Error(`Supabase load failed: ${firstError.message}`);
-  }
+      const firstError =
+        profilesRes.error ||
+        compsRes.error ||
+        teamsRes.error ||
+        matchesRes.error ||
+        predsRes.error ||
+        betsRes.error;
+      if (firstError) {
+        throw new Error(`Supabase load failed: ${firstError.message}`);
+      }
 
-  const records = liveRecords(
-    (matchesRes.data ?? []).map((r) => mapMatch(r as Record<string, unknown>)),
-    (predsRes.data ?? []).map((r) => mapPrediction(r as Record<string, unknown>)),
-    (betsRes.data ?? []).map((r) => mapBetting(r as Record<string, unknown>)),
+      const records = liveRecords(
+        (matchesRes.data ?? []).map((r) => mapMatch(r as Record<string, unknown>)),
+        (predsRes.data ?? []).map((r) => mapPrediction(r as Record<string, unknown>)),
+        (betsRes.data ?? []).map((r) => mapBetting(r as Record<string, unknown>)),
+      );
+      const competitionIds = new Set(records.matches.map((m) => m.competitionId));
+      const teamIds = new Set(
+        records.matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]),
+      );
+      return {
+        profiles: (profilesRes.data ?? []).map((r) =>
+          mapProfile(r as Record<string, unknown>),
+        ),
+        competitions: (compsRes.data ?? [])
+          .map((r) => mapCompetition(r as Record<string, unknown>))
+          .filter((c) => competitionIds.has(c.id)),
+        teams: (teamsRes.data ?? [])
+          .map((r) => mapTeam(r as Record<string, unknown>))
+          .filter((t) => teamIds.has(t.id)),
+        ...records,
+      };
+    })(),
+    SUPABASE_LOAD_TIMEOUT_MS,
+    "Supabase world load",
   );
-  const competitionIds = new Set(records.matches.map(m=>m.competitionId));
-  const teamIds = new Set(records.matches.flatMap(m=>[m.homeTeamId,m.awayTeamId]));
-  return {
-    profiles: (profilesRes.data ?? []).map((r) => mapProfile(r as Record<string, unknown>)),
-    competitions: (compsRes.data ?? []).map((r) => mapCompetition(r as Record<string, unknown>)).filter(c=>competitionIds.has(c.id)),
-    teams: (teamsRes.data ?? []).map((r) => mapTeam(r as Record<string, unknown>)).filter(t=>teamIds.has(t.id)),
-    ...records,
-  };
 });
 
 function toView(prediction: Prediction, world: WorldCache): PredictionView | null {
