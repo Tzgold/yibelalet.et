@@ -93,8 +93,15 @@ export async function startMockRegistration(phone: string, password: string) {
 
 export async function verifyMockRegistration(phone: string, otp: string) {
   const store = await readStore();
+  const code = otp.trim();
   const pending = store.pending.find((p) => p.phone === phone);
+
+  // Idempotent retry: first verify already created the user and cleared pending.
   if (!pending) {
+    const existing = store.users.find((u) => u.phone === phone);
+    if (existing && safeEqual(MOCK_OTP, code)) {
+      return { ok: true as const, user: existing };
+    }
     return {
       ok: false as const,
       error: "No pending registration for this number. Start again.",
@@ -105,7 +112,7 @@ export async function verifyMockRegistration(phone: string, otp: string) {
     await writeStore(store);
     return { ok: false as const, error: "Code expired. Register again." };
   }
-  if (!safeEqual(pending.otp, otp.trim())) {
+  if (!safeEqual(pending.otp, code)) {
     return {
       ok: false as const,
       error: "Invalid code. Use the mock OTP shown on screen.",
