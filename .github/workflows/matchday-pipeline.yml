@@ -75,7 +75,8 @@ jobs:
           restore-keys: matchday-ingest-
       - name: Ingest
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
-        run: npm run pipeline:ingest
+        # Secrets come from job env; do not use --env-file=.env.local (absent on runners).
+        run: npx --no-install tsx scripts/ingest-matchday.ts
       - name: Publish
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
         # 7-day window covers midweek cups and the next weekend during international breaks.
