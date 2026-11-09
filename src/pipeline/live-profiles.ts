@@ -3,12 +3,12 @@ import path from 'node:path';
 import { pipelineDb, allRows, type PipelineDb } from './db';
 import { COMPETITION_CODES, type CompetitionCode } from './data/api-football';
 import { loadOpenHistory, refreshOpenHistory } from './data/openfootball';
+import { loadOrFetchRecentResults, mergeTrainingHistory } from './data/recent-results';
 import { canonicalTeam } from './data/teams';
 import { fit } from './model/dixon-coles';
 import { buildPacket } from './packet';
 import { sourceFixture, tipHash } from './mapping';
-import { espn } from './providers/espn';
-import { usageFor } from './providers/usage';
+import { withProvider } from './providers/registry';
 import type { ProviderFixture } from './providers/types';
 import { seedStrategies, outcomeFor } from './run';
 import { PROFILE_STRATEGIES, selectForecast, forecastNote, type ForecastPick } from './profile-strategies';
@@ -70,7 +70,7 @@ export async function configureProfiles(db:PipelineDb,profiles:Row[]) {
   if(!fs.existsSync(backup))fs.writeFileSync(backup,JSON.stringify(configured.map(c=>c.profile),null,2));
   const rows=configured.map(({profile,rule})=>({...profile,
     bio:rule.description,
-    methodology:`${rule.description} A shared Dixon-Coles model is fitted to CC0 OpenFootball completed results using exponential time decay. Selection rule: ${rule.style}. Probabilities come from the statistical model, not invented personal results. Forecasts without verified prices have no betting record or ROI. Publication locks immediately; outcomes use regulation-time scores.`,
+    methodology:`${rule.description} A shared Dixon-Coles model is fitted to CC0 OpenFootball completed results plus recent verified scores from football-data.org/ESPN, using exponential time decay. Selection rule: ${rule.style}. Probabilities come from the statistical model, not invented personal results. Forecasts without verified prices have no betting record or ROI. Publication locks immediately; outcomes use regulation-time scores.`,
     specialties:[rule.title],competition_ids:(rule.leagues??COMPETITION_CODES).map(c=>`ht-comp-${c}`),
     model_type:profile.profile_type==='ai'?'Dixon-Coles statistical model':null,
     model_version:LIVE_MODEL_VERSION,updated_at:new Date().toISOString(),
@@ -127,25 +127,34 @@ export async function runLiveProfiles(options:LiveRunOptions) {
   }
   const fixtures:ProviderFixture[]=[];
   let providerErrors=0;
-  for(const [code,days]of dates)for(const day of days) {
-    const usage=await usageFor('espn');
-    if(usage.requestsToday>=400)throw new Error('Public fixture request budget reached');
-    try {
-      const date=new Date(day),season=date.getUTCMonth()>=6?date.getUTCFullYear():date.getUTCFullYear()-1;
-      fixtures.push(...await espn.fixtures!(code,season,{from:day,to:day}));
-    }catch{providerErrors++;console.warn(`Fixtures unavailable: ${code} ${day}`);}
+  const fixtureProviders=new Set<string>();
+  // One ranged request per competition (football-data.org). ESPN still expands day-by-day internally.
+  for(const [code,daySet]of dates) {
+    const days=[...daySet].sort();
+    if(!days.length)continue;
+    const from=days[0]!,to=days[days.length-1]!;
+    const mid=new Date(from);
+    const season=mid.getUTCMonth()>=6?mid.getUTCFullYear():mid.getUTCFullYear()-1;
+    const served=await withProvider('fixtures',code,(p)=>p.fixtures!(code,season,{from,to}),{accept:(r)=>r.length>0});
+    if(!served){providerErrors++;console.warn(`Fixtures unavailable: ${code} ${from}..${to}`);continue;}
+    fixtureProviders.add(served.provider);
+    fixtures.push(...served.result);
   }
-  console.log(`Fixture refresh: ${fixtures.length} records; ${providerErrors} unavailable competition-days`);
+  console.log(`Fixture refresh: ${fixtures.length} records via ${[...fixtureProviders].join(',')||'none'}; ${providerErrors} unavailable competitions`);
   if(!fixtures.length&&providerErrors)throw new Error('No live fixtures could be verified');
   if(!options.dryRun)await persistFixtures(db,fixtures,oldMatches,teams);
   const settled=options.dryRun?0:await settleLiveForecasts(db);
   if(options.settleOnly)return {settled,fixtures:fixtures.length,providerErrors};
   const now=new Date(),season=now.getUTCMonth()>=6?now.getUTCFullYear():now.getUTCFullYear()-1;
   const cutoff=new Date(now.toISOString().slice(0,10)+'T00:00:00Z');
-  const history=options.refreshHistory?await refreshOpenHistory([season-2,season-1,season],cutoff):loadOpenHistory([season-2,season-1,season],cutoff);
-  if(!history.length)throw new Error('Training history missing. Run npm run pipeline:open-history');
+  const openHistory=options.refreshHistory?await refreshOpenHistory([season-2,season-1,season],cutoff):loadOpenHistory([season-2,season-1,season],cutoff);
+  if(!openHistory.length)throw new Error('Training history missing. Run npm run pipeline:open-history');
+  const recent=await loadOrFetchRecentResults(cutoff);
+  const history=mergeTrainingHistory(openHistory,recent.matches);
   const newest=history.at(-1)!.date;
   if(now.getTime()-newest.getTime()>45*86400000)throw new Error('Training results are stale. Refresh history before publishing');
+  const trainingSource=['OpenFootball CC0',...recent.sources.map((s)=>`recent:${s}`)].join('+');
+  console.log(`Training history: ${history.length} matches (open ${openHistory.length}, recent ${recent.matches.length}${recent.fromCache?', cached':''}); newest ${newest.toISOString().slice(0,10)}`);
   const model=fit(history,{asOf:cutoff,xi:.002});
   const pool=new Map<string,{fixture:ProviderFixture;matchId:string;pick:ForecastPick;ctx:MatchContext}[]>();
   const seen=new Set<string>();
@@ -184,7 +193,7 @@ export async function runLiveProfiles(options:LiveRunOptions) {
         check(match.error);
         if(!match.data||match.data.match_status!=='scheduled'||new Date(match.data.kickoff_at).getTime()<=Date.now()+120000)continue;
         const publishedAt=new Date().toISOString();
-        const source={source:'yibelalet-live',basis:'model',matchday:day,matchdayTimeZone:'Africa/Addis_Ababa',strategy:rule.style,strategyTitle:rule.title,fixtureProvider:next.fixture.provider,externalId:next.fixture.externalId,modelVersion:LIVE_MODEL_VERSION,trainingSource:'OpenFootball CC0',trainingCutoff:cutoff.toISOString(),trainingMatches:history.length,evidence:{home:next.ctx.rawPred.homeWeight,away:next.ctx.rawPred.awayWeight},expectedGoals:{home:next.ctx.rawPred.lambda,away:next.ctx.rawPred.mu},pricesAvailable:false,generatedAt:publishedAt,hashVersion:2};
+        const source={source:'yibelalet-live',basis:'model',matchday:day,matchdayTimeZone:'Africa/Addis_Ababa',strategy:rule.style,strategyTitle:rule.title,fixtureProvider:next.fixture.provider,externalId:next.fixture.externalId,modelVersion:LIVE_MODEL_VERSION,trainingSource,trainingCutoff:cutoff.toISOString(),trainingMatches:history.length,evidence:{home:next.ctx.rawPred.homeWeight,away:next.ctx.rawPred.awayWeight},expectedGoals:{home:next.ctx.rawPred.lambda,away:next.ctx.rawPred.mu},pricesAvailable:false,generatedAt:publishedAt,hashVersion:2};
         const probability=Number(next.pick.probability.toFixed(4));
         const tip={id,profile_id:profile.id,match_id:next.matchId,market_type:next.pick.marketType,selection:next.pick.selection,probability,note:forecastNote(rule,next.ctx,next.pick),published_at:publishedAt,locked_at:publishedAt,model_version:LIVE_MODEL_VERSION,status:'upcoming',source_metadata:JSON.stringify({...source,hash:forecastSnapshotHash(id,next.pick.selection,probability,publishedAt)})};
         const result=await db.from('predictions').insert(tip);

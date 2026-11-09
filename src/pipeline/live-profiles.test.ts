@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseOpenSeason } from './data/openfootball';
+import {
+  mergeTrainingHistory,
+  providerFixtureToMatch,
+  writeRecentResultsCache,
+  loadRecentResultsCache,
+  RECENT_RESULTS_FILE,
+} from './data/recent-results';
+import fs from 'node:fs';
 import { PROFILE_STRATEGIES, selectForecast, forecastNote } from './profile-strategies';
 import { forecastOutcome, forecastSlotId, forecastSnapshotHash } from './live-profiles';
 import type { MatchContext } from './rooms/config';
+import type { Match } from './data/football-data';
+import type { ProviderFixture } from './providers/types';
 
 const form={played:5,points:11,ppg:2.2,goalsFor:10,goalsAgainst:4};
 const raw={lambda:1.9,mu:1.2,pH:.55,pD:.25,pA:.2,pOver25:.63,pUnder25:.37,pBtts:.62,homeWeight:30,awayWeight:30};
@@ -49,5 +59,28 @@ describe('live profile forecasts',()=>{
     expect(forecastOutcome('home_or_draw','double_chance',0,0)).toBe('win');
     expect(forecastOutcome('away_or_draw','double_chance',2,1)).toBe('loss');
     expect(()=>forecastOutcome('home','match_result',NaN,0)).toThrow();
+  });
+  it('merges recent finished provider scores over OpenFootball history',()=>{
+    const before=new Date('2026-11-09T00:00:00Z');
+    const base:Match[]=[{league:'E0',season:'2026-27',date:new Date('2026-09-20T00:00:00Z'),home:'Arsenal',away:'Chelsea',hg:2,ag:1,result:'H',odds:{open:null,close:null,avg:null,max:null,ou25:null,ou25Close:null}}];
+    const fixture:ProviderFixture={provider:'footballDataOrg',externalId:'1',competition:'E0',season:2026,kickoffUtc:new Date('2026-11-08T15:00:00Z'),homeRaw:'Arsenal FC',awayRaw:'Chelsea FC',status:'finished',homeGoals:1,awayGoals:1,round:null};
+    const recent=providerFixtureToMatch(fixture,before)!;
+    expect(recent.home).toBe('Arsenal');expect(recent.result).toBe('D');
+    const merged=mergeTrainingHistory(base,[recent]);
+    expect(merged).toHaveLength(2);
+    expect(merged.at(-1)!.date.toISOString().slice(0,10)).toBe('2026-11-08');
+    expect(providerFixtureToMatch({...fixture,status:'scheduled'},before)).toBeNull();
+  });
+  it('persists recent results cache without secrets',()=>{
+    const before=new Date('2026-11-09T00:00:00Z');
+    const match:Match={league:'E0',season:'2026-27',date:new Date('2026-11-08T00:00:00Z'),home:'Arsenal',away:'Chelsea',hg:1,ag:0,result:'H',odds:{open:null,close:null,avg:null,max:null,ou25:null,ou25Close:null}};
+    const file=writeRecentResultsCache(before,{matches:[match],sources:['footballDataOrg']},new Date('2026-11-09T01:00:00Z'));
+    expect(file).toBe(RECENT_RESULTS_FILE);
+    const text=fs.readFileSync(file,'utf8');
+    expect(text).not.toMatch(/apiKey|token|FOOTBALL_DATA|THE_ODDS|sk-/i);
+    const loaded=loadRecentResultsCache(24*60*60*1000);
+    expect(loaded?.matches).toHaveLength(1);
+    expect(loaded?.sources).toEqual(['footballDataOrg']);
+    expect(loaded?.matches[0]?.home).toBe('Arsenal');
   });
 });
