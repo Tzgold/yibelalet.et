@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Publish today/tomorrow or refresh results
+        description: Ingest+publish matchday tips, or settle results only
         type: choice
         options: [daily, settle]
         default: daily
@@ -18,10 +18,14 @@ concurrency:
 jobs:
   forecasts:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      THE_ODDS_API_MONTHLY_CREDITS: "500"
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -32,7 +36,7 @@ jobs:
       - name: Check server configuration
         run: |
           node <<'NODE'
-          const required = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+          const required = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'FOOTBALL_DATA_ORG_TOKEN'];
           const missing = required.filter((name) => !process.env[name]?.trim());
           if (missing.length) {
             console.error(`Missing GitHub Actions secrets: ${missing.join(', ')}`);
@@ -58,27 +62,32 @@ jobs:
               process.exit(1);
             }
           }
-          console.log('Supabase workflow configuration is present.');
+          console.log('Supabase and football-data.org workflow configuration is present.');
           NODE
-      - name: Restore completed results
+      - name: Restore completed results cache
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
         uses: actions/cache/restore@v5
         with:
-          path: .data/openfootball
-          key: openfootball-${{ github.run_id }}
-          restore-keys: openfootball-
-      - name: Refresh completed training history
+          path: |
+            .data/openfootball
+            .data/recent-results
+          key: matchday-ingest-${{ github.run_id }}
+          restore-keys: matchday-ingest-
+      - name: Ingest
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
-        run: npm run pipeline:history
-      - name: Publish matchday picks
+        run: npm run pipeline:ingest
+      - name: Publish
         if: github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily'
-        run: npx --no-install tsx scripts/run-live-profiles.ts --days 2
-      - name: Cache completed results
+        # 7-day window covers midweek cups and the next weekend during international breaks.
+        run: npx --no-install tsx scripts/run-live-profiles.ts --days 7
+      - name: Cache ingest artifacts
         if: success() && (github.event.schedule == '0 3,12 * * *' || inputs.operation == 'daily')
         uses: actions/cache/save@v5
         with:
-          path: .data/openfootball
-          key: openfootball-${{ github.run_id }}
-      - name: Refresh results
+          path: |
+            .data/openfootball
+            .data/recent-results
+          key: matchday-ingest-${{ github.run_id }}
+      - name: Settle
         if: github.event.schedule == '*/30 13-22 * * *' || inputs.operation == 'settle'
         run: npx --no-install tsx scripts/run-live-profiles.ts --settle-only
