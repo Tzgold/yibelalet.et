@@ -36,6 +36,9 @@ function mapStatus(s: string): FixtureStatus {
       return "postponed";
     case "CANCELLED":
       return "cancelled";
+    case "TIMED":
+    case "SCHEDULED":
+      return "scheduled";
     default:
       return "scheduled";
   }
